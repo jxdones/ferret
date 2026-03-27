@@ -1,0 +1,3 @@
+name: get user
+method: GET
+url: "{{base_url}}/users/1"

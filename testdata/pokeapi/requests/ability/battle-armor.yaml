@@ -1,0 +1,3 @@
+name: get battle armor ability
+method: GET
+url: "{{base_url}}/ability/battle-armor"
