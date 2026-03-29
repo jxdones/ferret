@@ -8,8 +8,6 @@ ferret is a terminal API client where collections are plain YAML files—sitting
 
 Open the TUI to explore interactively. Run requests in CI with the CLI. Same files, same environments, same behavior everywhere.
 
----
-
 ## Why ferret
 
 Most API clients are heavy desktop IDEs. They're slow to open and tied to proprietary ecosystems. Your request history lives on their servers, not yours.
@@ -17,8 +15,6 @@ Most API clients are heavy desktop IDEs. They're slow to open and tied to propri
 ferret is built for the terminal workflow. It opens instantly. It reads and writes plain YAML that you already know how to diff, grep, and version. When a teammate changes a request, you see it in the PR. When you need to run a request in CI, you use the same file you tested with locally.
 
 No heavy runtimes. No gigabytes of overhead. Just a single binary that works over SSH, in a container, or on your local machine.
-
----
 
 ## Features
 
@@ -40,8 +36,6 @@ Point ferret at a parent directory and it discovers collections automatically. J
 ### Keyboard-driven
 Every primary workflow is accessible from the keyboard. Navigate panes, tabs, collections, and request fields without reaching for a mouse, with consistent terminal-first keybindings.
 
----
-
 ## Quick Start
 
 ```sh
@@ -54,8 +48,6 @@ ferret
 # Execute a request via CLI
 ferret run ./collections/login.yaml -e prod --raw | jq .
 ```
-
----
 
 ## Collection Layout
 
@@ -85,14 +77,10 @@ Environment file:
 base_url: https://example.com
 ```
 
----
-
 ## Environments
 
 - **TUI** (`ferret`): pass `--env` / `-e` to load `environments/<name>.yaml` from the active collection. Omit it and ferret loads the first env alphabetically if any exist; otherwise runs shell-only (OS env vars, no YAML layer).
 - **`ferret run`**: pass `-e` with the env name. No auto-pick; empty name is not supported for file-backed envs.
-
----
 
 ## Multi-Collection Workspace
 
@@ -104,8 +92,6 @@ Point ferret at a parent directory containing multiple collections, then:
 | `C` | open collection picker |
 | `e` | cycle environments |
 | `/` | search requests in active collection |
-
----
 
 ## Keybindings
 
@@ -150,8 +136,6 @@ Point ferret at a parent directory containing multiple collections, then:
 | `j` / `k` | scroll |
 | `ctrl+d` | scroll half page |
 | `g` / `G` | top / bottom |
-
----
 
 ## Notes
 
