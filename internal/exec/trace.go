@@ -14,7 +14,8 @@ type traceRecorder struct {
 	trace *Trace
 }
 
-// newTraceRecorder creates a new trace recorder and records the request started event.
+// newTraceRecorder creates a new trace recorder and records the request started
+// event.
 func newTraceRecorder() *traceRecorder {
 	t := &Trace{}
 	rec := &traceRecorder{start: time.Now(), trace: t}
@@ -64,7 +65,8 @@ func (r *traceRecorder) clientTrace() *httptrace.ClientTrace {
 	}
 }
 
-// contextWithTrace returns a new context with the trace recorder's client trace attached.
+// contextWithTrace returns a new context with the trace recorder's client trace
+// attached.
 func (r *traceRecorder) contextWithTrace(ctx context.Context) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -82,7 +84,8 @@ func (r *traceRecorder) redirectCapture() func(*http.Request, []*http.Request) e
 	}
 }
 
-// httpClientWithRedirects returns a *http.Client that captures redirects in the trace.
+// httpClientWithRedirects returns a *http.Client that captures redirects in
+// the trace.
 func httpClientWithRedirects(rec *traceRecorder) *http.Client {
 	client := *http.DefaultClient
 	client.CheckRedirect = rec.redirectCapture()

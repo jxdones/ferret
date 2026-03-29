@@ -22,6 +22,7 @@ const (
 type Result struct {
 	Status     int
 	StatusText string
+	Proto      string
 	Headers    map[string][]string
 	Body       []byte
 	Duration   time.Duration
@@ -80,6 +81,7 @@ func resultFromResponse(resp *http.Response, body []byte, duration time.Duration
 	return Result{
 		Status:     resp.StatusCode,
 		StatusText: resp.Status,
+		Proto:      resp.Proto,
 		Headers:    map[string][]string(resp.Header),
 		Body:       body,
 		Duration:   duration,
@@ -89,15 +91,19 @@ func resultFromResponse(resp *http.Response, body []byte, duration time.Duration
 	}
 }
 
-// buildHTTPRequest applies env interpolation, validates the URL, and builds an *http.Request.
+// buildHTTPRequest applies env interpolation, validates the URL, and builds an
+// *http.Request.
 func buildHTTPRequest(req collection.Request, e *env.Env) (*http.Request, error) {
 	url := interpolate(req.URL, e)
 	if strings.TrimSpace(url) == "" {
 		return nil, fmt.Errorf("url is required")
 	}
+	if !strings.Contains(url, "://") {
+		url = "https://" + url
+	}
 	body := interpolate(req.Body, e)
 	if v := unresolvedVars(url); v != "" {
-		return nil, fmt.Errorf("unresolved variable %s - load an environment with --env <name>", v)
+		return nil, fmt.Errorf("unresolved variable %s - add it to environments/*.yaml and load that env (e.g. TUI or ferret run -e <name>), or export it in the shell", v)
 	}
 
 	var bodyReader io.Reader
@@ -140,7 +146,8 @@ func unresolvedVars(s string) string {
 	return s[start : start+end+2]
 }
 
-// interpolate replaces all {{key}} placeholders in a string with values resolved from the environment.
+// interpolate replaces all {{key}} placeholders in a string with values
+// resolved from the environment.
 func interpolate(s string, e *env.Env) string {
 	for _, m := range []map[string]string{e.Shell, e.Session, e.File} {
 		for k, v := range m {

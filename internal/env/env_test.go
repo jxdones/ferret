@@ -207,3 +207,65 @@ func TestListNames_MissingDirReturnsNil(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveStartEnv(t *testing.T) {
+	t.Run("explicit_name", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.MkdirAll(filepath.Join(dir, "environments"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "environments", "dev.yaml"), []byte("BASE: https://a\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		e, name, err := ResolveStartEnv(dir, "dev")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if name != "dev" {
+			t.Fatalf("name = %q, want dev", name)
+		}
+		got, ok := e.Get("BASE")
+		if !ok || got != "https://a" {
+			t.Fatalf("Get(BASE) = (%q, %v)", got, ok)
+		}
+	})
+
+	t.Run("empty_flag_no_files_is_shell_only", func(t *testing.T) {
+		dir := t.TempDir()
+		e, name, err := ResolveStartEnv(dir, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if name != "" {
+			t.Fatalf("name = %q, want empty", name)
+		}
+		if e.File != nil && len(e.File) > 0 {
+			t.Fatalf("expected no file layer, got %#v", e.File)
+		}
+	})
+
+	t.Run("empty_flag_picks_first_sorted_yaml", func(t *testing.T) {
+		dir := t.TempDir()
+		envDir := filepath.Join(dir, "environments")
+		if err := os.MkdirAll(envDir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(envDir, "prod.yaml"), []byte("N: prod\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(envDir, "dev.yaml"), []byte("N: dev\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		e, name, err := ResolveStartEnv(dir, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if name != "dev" {
+			t.Fatalf("name = %q, want dev", name)
+		}
+		got, _ := e.Get("N")
+		if got != "dev" {
+			t.Fatalf("Get(N) = %q, want dev", got)
+		}
+	})
+}

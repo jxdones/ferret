@@ -47,13 +47,13 @@ var runCmd = &cobra.Command{
 		if raw {
 			return render.RawBody(result, cmd.OutOrStdout())
 		}
-		return render.Response(request, result, cmd.OutOrStdout())
+		return render.Response(result, cmd.OutOrStdout())
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(runCmd)
-	runCmd.Flags().StringP("env", "e", "", "Environment to use (e.g. dev, prod)")
+	runCmd.Flags().StringP("env", "e", "", "Name of environments/<name>.yaml (required; no auto-pick like the TUI)")
 	runCmd.Flags().StringP("dir", "d", ".", "Collection root directory")
-	runCmd.Flags().BoolP("raw", "r", false, "Print only the response body (for piping to jq)")
+	runCmd.Flags().BoolP("raw", "r", false, "Print raw HTTP response (status line, headers, and body)")
 }

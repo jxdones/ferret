@@ -72,25 +72,39 @@ func SaveRequest(path string, request Request) error {
 	return nil
 }
 
-// DiscoverCollections discovers all collections in a directory.
-// A collection is a directory that contains a .ferret.yaml file.
-// If no collections are found, the directory itself is considered a collection root.
+// DiscoverCollections finds collection roots under dir without recursing into
+// subdirectories. It looks for .ferret.yaml in dir itself and in each immediate
+// child directory only (so scanning a large folder like $HOME stays cheap).
+// Deeper layouts (e.g. dir/a/b/.ferret.yaml with no marker at dir/a) are not
+// discovered here. If no marker is found, dir is treated as a single collection
+// root (same as before).
 func DiscoverCollections(dir string) ([]string, error) {
-	collections := map[string]struct{}{}
-	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if d.Name() == ".ferret.yaml" {
-			collections[filepath.Dir(path)] = struct{}{}
-		}
-		return nil
-	})
+	dir = filepath.Clean(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("collection: discover collections in %s: %w", dir, err)
+	}
+
+	collections := map[string]struct{}{}
+
+	if ok, err := hasFerretYAML(dir); err != nil {
+		return nil, fmt.Errorf("collection: discover collections in %s: %w", dir, err)
+	} else if ok {
+		collections[dir] = struct{}{}
+	}
+
+	for _, ent := range entries {
+		if !ent.IsDir() {
+			continue
+		}
+		sub := filepath.Join(dir, ent.Name())
+		ok, err := hasFerretYAML(sub)
+		if err != nil {
+			return nil, fmt.Errorf("collection: discover collections in %s: %w", dir, err)
+		}
+		if ok {
+			collections[sub] = struct{}{}
+		}
 	}
 
 	if len(collections) == 0 {
@@ -105,8 +119,20 @@ func DiscoverCollections(dir string) ([]string, error) {
 	return out, nil
 }
 
+func hasFerretYAML(dir string) (bool, error) {
+	_, err := os.Stat(filepath.Join(dir, ".ferret.yaml"))
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) || os.IsPermission(err) {
+		return false, nil
+	}
+	return false, err
+}
+
 // LoadConfig loads a collection configuration from a file.
-// The config is loaded from the nearest .ferret.yaml file in the directory hierarchy.
+// The config is loaded from the nearest .ferret.yaml file in the directory
+// hierarchy.
 func LoadConfig(dir string) (Config, error) {
 	current := dir
 	for {

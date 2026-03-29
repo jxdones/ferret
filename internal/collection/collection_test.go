@@ -3,6 +3,7 @@ package collection
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"testing"
 )
@@ -65,11 +66,11 @@ func TestDiscoverCollections(t *testing.T) {
 			want:  func(dir string) []string { return []string{dir} },
 		},
 		{
-			name: "finds_directories_containing_dot_ferret_yaml",
+			name: "finds_only_root_and_immediate_children_with_dot_ferret_yaml",
 			setup: func(t *testing.T, dir string) {
 				t.Helper()
 				a := filepath.Join(dir, "a")
-				b := filepath.Join(dir, "b", "c")
+				b := filepath.Join(dir, "b")
 				if err := os.MkdirAll(a, 0o755); err != nil {
 					t.Fatalf("mkdir a: %v", err)
 				}
@@ -79,14 +80,14 @@ func TestDiscoverCollections(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(a, ".ferret.yaml"), []byte("name: A\n"), 0o644); err != nil {
 					t.Fatalf("write a config: %v", err)
 				}
-				if err := os.WriteFile(filepath.Join(b, ".ferret.yaml"), []byte("name: C\n"), 0o644); err != nil {
+				if err := os.WriteFile(filepath.Join(b, ".ferret.yaml"), []byte("name: B\n"), 0o644); err != nil {
 					t.Fatalf("write b config: %v", err)
 				}
 			},
 			want: func(dir string) []string {
 				return []string{
 					filepath.Join(dir, "a"),
-					filepath.Join(dir, "b", "c"),
+					filepath.Join(dir, "b"),
 				}
 			},
 		},
@@ -114,6 +115,54 @@ func TestDiscoverCollections(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestDiscoverCollections_doesNotWalkNestedChildren(t *testing.T) {
+	root := t.TempDir()
+	nested := filepath.Join(root, "outer", "inner")
+	if err := os.MkdirAll(nested, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(nested, ".ferret.yaml"), []byte("name: deep\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := DiscoverCollections(root)
+	if err != nil {
+		t.Fatalf("DiscoverCollections: %v", err)
+	}
+	if len(got) != 1 || got[0] != root {
+		t.Fatalf("got %v, want only [%s] (nested .ferret.yaml ignored)", got, root)
+	}
+}
+
+func TestDiscoverCollections_skipsUnreadableSubtrees(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod not applicable")
+	}
+	root := t.TempDir()
+	good := filepath.Join(root, "api")
+	if err := os.MkdirAll(filepath.Join(good, "requests"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(good, ".ferret.yaml"), []byte("name: api\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	blocked := filepath.Join(root, "blocked")
+	if err := os.MkdirAll(blocked, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(blocked, 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(blocked, 0o755) })
+
+	got, err := DiscoverCollections(root)
+	if err != nil {
+		t.Fatalf("DiscoverCollections: %v", err)
+	}
+	if len(got) != 1 || got[0] != good {
+		t.Fatalf("got %v, want [%s]", got, good)
 	}
 }
 

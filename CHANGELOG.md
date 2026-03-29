@@ -1,0 +1,40 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-03-29
+
+### Added
+
+- **Multi-tab request management.** Keep multiple requests open simultaneously. Each tab holds its own URL, method, headers, and response state independently. Switch tabs with `ctrl+n` / `ctrl+p`, open a new tab with `T`, and close with `X`. Tab labels show the HTTP method in its themed color and the request name or URL.
+
+- **Request pane tabs.** The request pane exposes four tabs — `headers`, `params`, `body`, and `auth` — navigable with `]` / `[`. The params tab parses query parameters from the URL in real time.
+
+- **Response pane tabs.** The response pane exposes four tabs — `body`, `headers`, `cookies`, and `trace`. The body tab renders JSON, XML, and HTML with syntax highlighting. The trace tab shows a per-stage timing breakdown and redirect history.
+
+- **Response syntax highlighting.** Response bodies are syntax-highlighted using [chroma](https://github.com/alecthomas/chroma). The lexer is auto-detected from the `Content-Type` header, falling back to content sniffing.
+
+- **Environment variable interpolation.** Use `{{variable}}` placeholders in request URLs, headers, and bodies. Values are resolved from a layered environment: YAML file, session variables, and OS shell env vars.
+
+- **Multi-collection workspace.** Point ferret at a parent directory and it discovers all collections underneath. Cycle with `c` or open the picker with `C`.
+
+- **Environment cycling.** Press `e` to cycle through environments defined in `environments/*.yaml`. Switching environments preserves session variables extracted from previous responses.
+
+- **Method picker modal.** Press `M` to open a modal and select the HTTP method. Press `m` to cycle through `GET → POST → PUT → PATCH → DELETE`.
+
+- **URL bar with paste support.** The URL bar accepts typed input, paste via `ctrl+v`, and can be cleared with `ctrl+l`.
+
+- **`https://` fallback.** URLs without a scheme automatically get `https://` prepended at send time.
+
+- **Request trace.** Every request records a per-stage timing timeline (DNS, connect, TLS handshake, TTFB, body read) visible in the response trace tab.
+
+- **Status bar.** Shows request status, HTTP status code, response size, and duration after each send. Displays warnings and errors inline.
+
+- **`ferret run` CLI.** Run a single request from a collection file and print the response to stdout. Supports `--raw` for piping to `jq` and `-e` for environment selection.
+
+- **Keyboard-driven navigation.** Full keyboard control throughout. `tab` / `shift+tab` cycles focus between the URL bar, request pane, and response pane. `?` opens the full help overlay.

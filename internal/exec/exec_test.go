@@ -134,6 +134,9 @@ func TestExecute(t *testing.T) {
 				if res.Trace.RemoteAddr == "" {
 					t.Fatal("expected RemoteAddr from GotConn")
 				}
+				if res.Proto == "" {
+					t.Fatal("expected HTTP response protocol")
+				}
 			},
 		},
 		{
