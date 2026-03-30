@@ -77,9 +77,9 @@ func (m *Model) View() tea.View {
 
 	right := ""
 	if strings.TrimSpace(m.env) == "" {
-		right = shellEnv.Render("shell only ")
+		right = shellEnv.Render("[shell only] ")
 	} else {
-		right = fileEnv.Render(m.env + " ")
+		right = fileEnv.Render("[" + m.env + "] ")
 	}
 
 	gap := max(0, m.width-lipgloss.Width(left)-lipgloss.Width(right))

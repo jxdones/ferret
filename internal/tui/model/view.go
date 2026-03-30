@@ -142,7 +142,6 @@ func (m Model) renderTabsDivider() string {
 	dim := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
 	reqTabLine := lipgloss.NewStyle().Foreground(theme.Current.RequestPaneLabel)
 	resTabLine := lipgloss.NewStyle().Foreground(theme.Current.ResponsePaneLabel)
-	center := dim
 
 	leftStart, leftWidth := m.tab().requestPane.ActiveTabSpan()
 	rightStart, rightWidth := m.tab().responsePane.ActiveTabSpan()
@@ -158,7 +157,7 @@ func (m Model) renderTabsDivider() string {
 
 	left := paneDivider(mid, leftStart, leftWidth, dim, leftActive)
 	right := paneDivider(m.width-mid-1, rightStart, rightWidth, dim, rightActive)
-	return left + center.Render("┼") + right
+	return left + dim.Render("┼") + right
 }
 
 // renderRequestTabs renders the top-level request tab strip.
@@ -175,16 +174,24 @@ func (m Model) renderRequestTabs() string {
 		}
 		if i == m.activeTab {
 			method := t.urlbar.Method()
-			nameStyle := lipgloss.NewStyle().Foreground(theme.Current.TabsActiveText).Bold(true)
+			activeStyle := lipgloss.NewStyle().
+				Background(theme.MethodColor(method)).
+				Foreground(lipgloss.Color("#111111")).
+				Bold(true).
+				Padding(0, 1)
+			sb.WriteString(activeStyle.Render(title))
+		} else {
+			method := t.urlbar.Method()
+			nameStyle := lipgloss.NewStyle().Foreground(theme.Current.TabsInactiveText)
+			sb.WriteString(" ")
 			if method != "" && strings.HasPrefix(title, method+" ") {
-				methodStyle := lipgloss.NewStyle().Foreground(theme.MethodColor(method)).Bold(true)
+				methodStyle := lipgloss.NewStyle().Foreground(theme.MethodColor(method))
 				sb.WriteString(methodStyle.Render(method))
 				sb.WriteString(nameStyle.Render(" " + title[len(method)+1:]))
 			} else {
 				sb.WriteString(nameStyle.Render(title))
 			}
-		} else {
-			sb.WriteString(lipgloss.NewStyle().Foreground(theme.Current.TabsInactiveText).Render(title))
+			sb.WriteString(" ")
 		}
 	}
 	built := sb.String()
@@ -201,10 +208,9 @@ func (m Model) renderTabsRow() string {
 func (m Model) renderPaneLabels() string {
 	mid := m.width / 2
 	rightWidth := m.width - mid - 1
-	divider := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
 
-	leftLabelStyle := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-	rightLabelStyle := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
+	leftLabelStyle := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
+	rightLabelStyle := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
 	if m.focus == focusRequestPane {
 		leftLabelStyle = lipgloss.NewStyle().Foreground(theme.Current.RequestPaneLabel).Bold(true)
 	}
@@ -212,6 +218,7 @@ func (m Model) renderPaneLabels() string {
 		rightLabelStyle = lipgloss.NewStyle().Foreground(theme.Current.ResponsePaneLabel).Bold(true)
 	}
 
+	divider := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
 	left := fitToWidth([]string{" " + leftLabelStyle.Render("request")}, mid)[0]
 	right := fitToWidth([]string{" " + rightLabelStyle.Render("response")}, rightWidth)[0]
 	return left + divider.Render("│") + right
