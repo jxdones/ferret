@@ -29,43 +29,6 @@ const (
 	requestTabAuth
 )
 
-func requestTabLabels() []string {
-	return []string{
-		requestTabHeaders.label(),
-		requestTabParams.label(),
-		requestTabBody.label(),
-		requestTabAuth.label(),
-	}
-}
-
-func (t requestTabID) label() string {
-	switch t {
-	case requestTabHeaders:
-		return headersTabLabel
-	case requestTabParams:
-		return paramsTabLabel
-	case requestTabBody:
-		return bodyTabLabel
-	case requestTabAuth:
-		return authTabLabel
-	default:
-		return headersTabLabel
-	}
-}
-
-func requestTabFromLabel(label string) requestTabID {
-	switch label {
-	case paramsTabLabel:
-		return requestTabParams
-	case bodyTabLabel:
-		return requestTabBody
-	case authTabLabel:
-		return requestTabAuth
-	default:
-		return requestTabHeaders
-	}
-}
-
 type bodyFocusID int
 
 const (
@@ -78,6 +41,13 @@ type queryParam struct {
 	value string
 }
 
+type bodyTypeID int
+
+const (
+	bodyTypeNone bodyTypeID = iota
+	bodyTypeRaw
+)
+
 // Model represents a request pane.
 type Model struct {
 	tabs    tabs.Model
@@ -89,6 +59,7 @@ type Model struct {
 	height    int
 	focused   bool
 	bodyFocus bodyFocusID
+	bodyType  bodyTypeID
 }
 
 // New returns an initialized request pane model.
@@ -136,6 +107,11 @@ func (m *Model) ResetBodyFocus() {
 // SetBody sets the request body for the body tab.
 func (m *Model) SetBody(body string) {
 	m.body.SetValue(body)
+	if body != "" {
+		m.bodyType = bodyTypeRaw
+	} else {
+		m.bodyType = bodyTypeNone
+	}
 	m.syncBodySyntax()
 	m.syncEditorFocus()
 }
@@ -147,6 +123,9 @@ func (m Model) Headers() map[string]string {
 
 // Body returns the current request body text.
 func (m Model) Body() string {
+	if m.bodyType == bodyTypeNone {
+		return ""
+	}
 	return m.body.Value()
 }
 
@@ -175,7 +154,11 @@ func (m Model) View() tea.View {
 	case requestTabParams:
 		return tea.NewView(m.paramsView())
 	case requestTabBody:
-		return tea.NewView(strings.Join([]string{m.renderBodyTypeLine(), "", m.body.View()}, "\n"))
+		typeLine := m.renderBodyTypeLine()
+		if m.bodyType == bodyTypeNone {
+			return tea.NewView(typeLine)
+		}
+		return tea.NewView(strings.Join([]string{typeLine, "", m.body.View()}, "\n"))
 	}
 	return tea.NewView("")
 }
@@ -220,23 +203,7 @@ func (m Model) updateKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
 		// Body tab has two modes. Only the outer (selector) mode uses [ ] for inner tab
 		// navigation; in the editor, [ ] are passed through for JSON and similar payloads.
 		if m.bodyFocus == bodyFocusEditor {
-			switch msg.String() {
-			case "esc":
-				m.bodyFocus = bodyFocusType
-				m.syncEditorFocus()
-				return m, nil, true
-			case "tab", "shift+tab":
-				return m, nil, true
-			case "ctrl+l":
-				m.body.SetValue("")
-				m.syncBodySyntax()
-				return m, nil, true
-			default:
-				var cmd tea.Cmd
-				m.body, cmd = m.body.Update(msg)
-				m.syncBodySyntax()
-				return m, cmd, true
-			}
+			return m.updateBodyKeyPress(msg)
 		}
 		switch msg.String() {
 		case "]":
@@ -250,7 +217,18 @@ func (m Model) updateKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
 		case "esc":
 			return m, nil, false
 		case "enter", "i":
-			m.bodyFocus = bodyFocusEditor
+			if m.bodyType == bodyTypeRaw {
+				m.bodyFocus = bodyFocusEditor
+				m.syncEditorFocus()
+				return m, nil, true
+			}
+			return m, nil, false
+		case "h", "left":
+			m.bodyType = m.bodyType.cycle()
+			m.syncEditorFocus()
+			return m, nil, true
+		case "l", "right":
+			m.bodyType = m.bodyType.cycle()
 			m.syncEditorFocus()
 			return m, nil, true
 		}
@@ -299,6 +277,30 @@ func (m Model) updateKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
 	return m, nil, false
 }
 
+// updateBodyKeyPress handles key presses for the body tab.
+func (m Model) updateBodyKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
+	switch msg.String() {
+	case "esc":
+		m.bodyFocus = bodyFocusType
+		m.syncEditorFocus()
+		return m, nil, true
+	case "tab":
+		indent := strings.Repeat(" ", 4)
+		m.body.InsertString(indent)
+		return m, nil, true
+	case "ctrl+l":
+		m.body.SetValue("")
+		m.syncBodySyntax()
+		return m, nil, true
+	default:
+		var cmd tea.Cmd
+		m.body, cmd = m.body.Update(msg)
+		m.syncBodySyntax()
+		return m, cmd, true
+	}
+	return m, nil, false
+}
+
 // BodyFocused reports whether the body editor is focused.
 func (m Model) BodyFocused() bool {
 	return m.focused && m.activeTab() == requestTabBody && m.bodyFocus == bodyFocusEditor
@@ -323,10 +325,25 @@ func (m *Model) syncBodySyntax() {
 
 // renderBodyTypeLine renders the body type line.
 func (m Model) renderBodyTypeLine() string {
-	// Keep a fixed 2-space gutter to match headers/body pane alignment.
-	label := lipgloss.NewStyle().Foreground(theme.Current.TextMuted).Render(" payload type: ")
-	value := lipgloss.NewStyle().Foreground(theme.Current.TitleBarEntry).Bold(true).Render("binary")
-	return label + value
+	types := []bodyTypeID{
+		bodyTypeNone,
+		bodyTypeRaw,
+	}
+
+	selected := lipgloss.NewStyle().Foreground(theme.Current.TitleBarEntry).Bold(true)
+	muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
+	dim := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
+
+	var parts []string
+	for _, t := range types {
+		if t == m.bodyType {
+			parts = append(parts, selected.Render(t.label()))
+		} else {
+			parts = append(parts, muted.Render(t.label()))
+		}
+	}
+	inner := strings.Join(parts, dim.Render(" │ "))
+	return muted.Render(" [ ") + inner + muted.Render(" ] ")
 }
 
 // paramsView renders query parameters derived from the current URL.
@@ -447,4 +464,63 @@ func padRight(s string, n int) string {
 		out += strings.Repeat(" ", n-w)
 	}
 	return out
+}
+
+// requestTabLabels returns the labels for the request tabs.
+func requestTabLabels() []string {
+	return []string{
+		requestTabHeaders.label(),
+		requestTabParams.label(),
+		requestTabBody.label(),
+		requestTabAuth.label(),
+	}
+}
+
+// label returns the label for the request tab.
+func (t requestTabID) label() string {
+	switch t {
+	case requestTabHeaders:
+		return headersTabLabel
+	case requestTabParams:
+		return paramsTabLabel
+	case requestTabBody:
+		return bodyTabLabel
+	case requestTabAuth:
+		return authTabLabel
+	default:
+		return headersTabLabel
+	}
+}
+
+// requestTabFromLabel returns the request tab ID from the label.
+func requestTabFromLabel(label string) requestTabID {
+	switch label {
+	case paramsTabLabel:
+		return requestTabParams
+	case bodyTabLabel:
+		return requestTabBody
+	case authTabLabel:
+		return requestTabAuth
+	default:
+		return requestTabHeaders
+	}
+}
+
+// label returns the label for the body type.
+func (t bodyTypeID) label() string {
+	switch t {
+	case bodyTypeRaw:
+		return "raw"
+	default:
+		return "none"
+	}
+}
+
+// cycle cycles the body type.
+// The cycle is: none -> raw -> none.
+func (t bodyTypeID) cycle() bodyTypeID {
+	if t == bodyTypeNone {
+		return bodyTypeRaw
+	}
+	return bodyTypeNone
 }

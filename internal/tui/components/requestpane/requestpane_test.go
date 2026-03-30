@@ -132,6 +132,7 @@ func TestUpdate_BodyTabEditorAllowsBrackets(t *testing.T) {
 	m.SetSize(60, 0)
 	m, _, _ = m.Update(keyPress(tea.Key{Code: ']', Text: "]"}))
 	m, _, _ = m.Update(keyPress(tea.Key{Code: ']', Text: "]"}))
+	m, _, _ = m.Update(keyPress(tea.Key{Code: 'l', Text: "l"}))
 	m, _, _ = m.Update(keyPress(tea.Key{Code: 'i', Text: "i"}))
 	m, _, handled := m.Update(keyPress(tea.Key{Code: '[', Text: "["}))
 	if !handled {
@@ -156,6 +157,7 @@ func TestUpdate_BodyTabEditorConsumesTab(t *testing.T) {
 	m.SetSize(60, 0)
 	m, _, _ = m.Update(keyPress(tea.Key{Code: ']', Text: "]"}))
 	m, _, _ = m.Update(keyPress(tea.Key{Code: ']', Text: "]"}))
+	m, _, _ = m.Update(keyPress(tea.Key{Code: 'l', Text: "l"}))
 	m, _, _ = m.Update(keyPress(tea.Key{Code: 'i', Text: "i"}))
 
 	before := m.tabs.ActiveLabel()
@@ -229,6 +231,7 @@ func TestUpdate_BodyTabCtrlVHandledInEditor(t *testing.T) {
 	m.SetSize(60, 0)
 	m, _, _ = m.Update(keyPress(tea.Key{Code: ']', Text: "]"}))
 	m, _, _ = m.Update(keyPress(tea.Key{Code: ']', Text: "]"}))
+	m, _, _ = m.Update(keyPress(tea.Key{Code: 'l', Text: "l"}))
 	m, _, _ = m.Update(keyPress(tea.Key{Code: 'i', Text: "i"}))
 
 	m, _, handled := m.Update(keyPress(tea.Key{Code: 'v', Mod: tea.ModCtrl}))
@@ -243,6 +246,7 @@ func TestUpdate_BodyTabPasteMsgInsertsText(t *testing.T) {
 	m.SetSize(60, 0)
 	m, _, _ = m.Update(keyPress(tea.Key{Code: ']', Text: "]"}))
 	m, _, _ = m.Update(keyPress(tea.Key{Code: ']', Text: "]"}))
+	m, _, _ = m.Update(keyPress(tea.Key{Code: 'l', Text: "l"}))
 	m, _, _ = m.Update(keyPress(tea.Key{Code: 'i', Text: "i"}))
 
 	next, _, handled := m.Update(tea.PasteMsg{Content: "{\"ok\":true}"})
@@ -344,8 +348,9 @@ func TestView_BodyTabRendersBodyEditor(t *testing.T) {
 	m := New()
 	m.SetSize(40, 0)
 	m.tabs.SetActive(2) // body
+	m.bodyType = bodyTypeRaw
 	out := tuitest.StripANSI(m.View().Content)
-	if !strings.Contains(out, "binary") {
+	if !strings.Contains(out, "raw") {
 		t.Fatalf("View() on body tab = %q, want body type line", out)
 	}
 	if !strings.Contains(out, "request body") {

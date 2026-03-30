@@ -147,6 +147,7 @@ func TestUpdate_PasteMsgRoutesToBodyEditor(t *testing.T) {
 	m.tab().requestPane.SetFocused(true)
 	m.tab().requestPane, _, _ = m.tab().requestPane.Update(tea.KeyPressMsg(tea.Key{Code: ']', Text: "]"}))
 	m.tab().requestPane, _, _ = m.tab().requestPane.Update(tea.KeyPressMsg(tea.Key{Code: ']', Text: "]"}))
+	m.tab().requestPane, _, _ = m.tab().requestPane.Update(tea.KeyPressMsg(tea.Key{Code: 'l', Text: "l"}))
 	m.tab().requestPane, _, _ = m.tab().requestPane.Update(tea.KeyPressMsg(tea.Key{Code: 'i', Text: "i"}))
 	m.syncChildStateWithLayout()
 

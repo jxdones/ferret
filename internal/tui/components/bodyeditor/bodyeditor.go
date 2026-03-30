@@ -98,6 +98,11 @@ func (m *Model) SetSize(width, height int) {
 	m.input.SetHeight(max(1, height))
 }
 
+// InsertString inserts a string at the current cursor position.
+func (m *Model) InsertString(s string) {
+	m.input.InsertString(s)
+}
+
 // SetFocused focuses or blurs the underlying textarea.
 func (m *Model) SetFocused(focused bool) {
 	if focused {

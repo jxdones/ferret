@@ -36,6 +36,9 @@ type RequestFailedMsg struct {
 func (m Model) handleRequestKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.Default.Send):
+		if strings.TrimSpace(m.tab().urlbar.URL()) == "" {
+			return m, m.statusbar.SetError("url is required")
+		}
 		return m, sendRequestCmd(m.buildRequest(), m.env)
 	case key.Matches(msg, keys.Default.NewRequest):
 		cmd := m.startNewRequest()
