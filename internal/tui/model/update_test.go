@@ -89,7 +89,7 @@ func TestUpdate_NewRequestShortcutClearsLoadedState(t *testing.T) {
 	m.titlebar.SetEntry("existing request")
 	m.tab().responsePane.SetResponse([]byte(`{"ok":true}`), map[string][]string{"Content-Type": {"application/json"}}, exec.Trace{
 		Events: []exec.TraceEvent{{Name: "request started", Elapsed: 0}},
-	})
+	}, false, 0)
 	m.focus = focusRequestPane
 	m.lastPane = requestPane
 	m.syncChildStateWithLayout()

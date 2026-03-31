@@ -1,11 +1,13 @@
 package exec
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jxdones/ferret/internal/collection"
 	"github.com/jxdones/ferret/internal/env"
@@ -76,6 +78,7 @@ func TestInterpolate(t *testing.T) {
 func TestExecute(t *testing.T) {
 	tests := []struct {
 		name      string
+		ctx       func(t *testing.T) context.Context
 		req       func(t *testing.T) (collection.Request, *env.Env)
 		wantErr   bool
 		errSubstr string
@@ -178,6 +181,55 @@ func TestExecute(t *testing.T) {
 			},
 		},
 		{
+			name: "response_over_limit_sets_response_too_big",
+			req: func(t *testing.T) (collection.Request, *env.Env) {
+				t.Helper()
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					chunk := make([]byte, 1024)
+					for i := range chunk {
+						chunk[i] = 'a'
+					}
+					for written := 0; written < maxResponseBodySize+1; written += len(chunk) {
+						_, _ = w.Write(chunk)
+					}
+				}))
+				t.Cleanup(srv.Close)
+				return collection.Request{Method: http.MethodGet, URL: srv.URL + "/"}, env.NewFromShell()
+			},
+			check: func(t *testing.T, res Result) {
+				t.Helper()
+				if !res.ResponseTooBig {
+					t.Fatal("ResponseTooBig = false, want true")
+				}
+				if res.Body != nil {
+					t.Fatalf("Body should be nil when ResponseTooBig, got %d bytes", len(res.Body))
+				}
+				if res.ResponseSize <= 0 {
+					t.Fatalf("ResponseSize = %d, want > 0", res.ResponseSize)
+				}
+			},
+		},
+		{
+			name: "context_cancellation_returns_error",
+			ctx: func(t *testing.T) context.Context {
+				t.Helper()
+				ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+				t.Cleanup(cancel)
+				return ctx
+			},
+			req: func(t *testing.T) (collection.Request, *env.Env) {
+				t.Helper()
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// stall indefinitely — never writes a response
+					<-r.Context().Done()
+				}))
+				t.Cleanup(srv.Close)
+				return collection.Request{Method: http.MethodGet, URL: srv.URL + "/"}, env.NewFromShell()
+			},
+			wantErr: true,
+		},
+		{
 			name: "redirect_appends_next_url_to_trace_redirects",
 			req: func(t *testing.T) (collection.Request, *env.Env) {
 				t.Helper()
@@ -215,8 +267,12 @@ func TestExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			if tt.ctx != nil {
+				ctx = tt.ctx(t)
+			}
 			req, e := tt.req(t)
-			res, err := Execute(req, e)
+			res, err := Execute(ctx, req, e)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error")

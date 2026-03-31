@@ -239,7 +239,7 @@ func TestResolveStartEnv(t *testing.T) {
 		if name != "" {
 			t.Fatalf("name = %q, want empty", name)
 		}
-		if e.File != nil && len(e.File) > 0 {
+		if len(e.File) > 0 {
 			t.Fatalf("expected no file layer, got %#v", e.File)
 		}
 	})

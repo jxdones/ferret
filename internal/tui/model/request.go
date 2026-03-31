@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -22,10 +23,12 @@ const (
 type RequestStartedMsg struct{}
 
 type RequestFinishedMsg struct {
-	Response statusbar.Response
-	Body     []byte
-	Headers  map[string][]string
-	Trace    exec.Trace
+	Response       statusbar.Response
+	Body           []byte
+	Headers        map[string][]string
+	Trace          exec.Trace
+	ResponseTooBig bool
+	ResponseSize   int64
 }
 
 type RequestFailedMsg struct {
@@ -86,7 +89,7 @@ func (m Model) onRequestStarted() (Model, tea.Cmd) {
 // onRequestFinished handles the request finished event.
 func (m Model) onRequestFinished(msg RequestFinishedMsg) (Model, tea.Cmd) {
 	m.statusbar.SetResponse(msg.Response)
-	m.tab().responsePane.SetResponse(msg.Body, msg.Headers, msg.Trace)
+	m.tab().responsePane.SetResponse(msg.Body, msg.Headers, msg.Trace, msg.ResponseTooBig, msg.ResponseSize)
 	m.focus = focusResponsePane
 	m.lastPane = responsePane
 	m.syncChildState()
@@ -122,7 +125,7 @@ func sendRequestCmd(req collectiondata.Request, e *env.Env) tea.Cmd {
 	return tea.Batch(
 		func() tea.Msg { return RequestStartedMsg{} },
 		func() tea.Msg {
-			result, err := exec.Execute(req, e)
+			result, err := exec.Execute(context.Background(), req, e)
 			if err != nil {
 				return RequestFailedMsg{Error: err}
 			}
@@ -134,9 +137,11 @@ func sendRequestCmd(req collectiondata.Request, e *env.Env) tea.Cmd {
 					Size:       int64(result.Size),
 					Format:     detectFormatFromHeaders(result.Headers),
 				},
-				Body:    result.Body,
-				Headers: result.Headers,
-				Trace:   result.Trace,
+				Body:           result.Body,
+				Headers:        result.Headers,
+				Trace:          result.Trace,
+				ResponseTooBig: result.ResponseTooBig,
+				ResponseSize:   result.ResponseSize,
 			}
 		},
 	)

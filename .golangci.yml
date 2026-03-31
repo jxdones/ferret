@@ -1,0 +1,15 @@
+version: "2"
+run:
+  go: '1.26.1'
+
+linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - "(*http.Response).Body.Close"
+  exclusions:
+    rules:
+      - linters:
+          - errcheck
+        path: 'internal/exec/exec\.go'
+        text: 'resp\.Body\.Close'

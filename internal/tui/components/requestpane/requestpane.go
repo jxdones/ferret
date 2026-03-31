@@ -298,7 +298,6 @@ func (m Model) updateBodyKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
 		m.syncBodySyntax()
 		return m, cmd, true
 	}
-	return m, nil, false
 }
 
 // BodyFocused reports whether the body editor is focused.

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-30
+
+### Added
+
+- **Large response protection.** Responses exceeding 10MB are no longer buffered into memory. The response pane shows the actual response size and a warning instead of rendering the body, preventing memory exhaustion on large or misconfigured API responses.
+
+### Changed
+
+- **HTTP request timeout.** Requests now have a 30-second default timeout. If the caller provides a context with its own deadline, that takes precedence. Previously, requests with no server response would hang indefinitely, freezing the TUI.
+- **`exec.Execute` now accepts a `context.Context`.** The context is threaded through to the underlying HTTP request, enabling future per-tab cancellation support.
+
 ## [0.1.0] - 2026-03-29
 
 ### Added

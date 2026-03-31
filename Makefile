@@ -1,11 +1,12 @@
 TARGET := ferret
-VERSION := 0.1.0
+VERSION := 0.2.0
 GO := go
 GOFMT := gofmt
 LINTER := golangci-lint
 PREFIX ?= /usr/local
+GOOS := $(shell go env GOOS)
 
-.PHONY: build test test-integration fmt lint clean release install install-prefix run
+.PHONY: build test fmt lint clean release install install-prefix
 
 LDFLAGS := -ldflags "-s -w -X main.version=v$(VERSION)"
 
@@ -24,8 +25,6 @@ lint:
 clean:
 	rm -rf bin dist
 
-GOOS := $(shell go env GOOS)
-
 release: clean
 	mkdir -p dist
 	GOARCH=amd64 $(GO) build $(LDFLAGS) -o dist/$(TARGET)-$(GOOS)-amd64 .
@@ -34,7 +33,6 @@ release: clean
 # Install to $GOBIN. Ensure $GOBIN is in your PATH.
 install:
 	$(GO) install $(LDFLAGS) .
-
 
 install-prefix: build
 	install -d $(DESTDIR)$(PREFIX)/bin

@@ -74,12 +74,14 @@ func responseTabFromLabel(label string) responseTabID {
 
 // Model is the response viewer pane.
 type Model struct {
-	tabs    tabs.Model
-	body    []byte
-	headers map[string][]string
-	trace   exec.Trace
-	lines   []string
-	offset  int // body tab vertical scroll
+	tabs           tabs.Model
+	body           []byte
+	headers        map[string][]string
+	trace          exec.Trace
+	responseTooBig bool
+	responseSize   int64
+	lines          []string
+	offset         int // body tab vertical scroll
 
 	headersOffset int // headers tab vertical scroll
 	width         int
@@ -112,12 +114,14 @@ func (m *Model) SetFocused(focused bool) {
 
 // SetResponse stores response data and resets the scroll position.
 // Call this whenever a new response arrives.
-func (m *Model) SetResponse(body []byte, headers map[string][]string, trace exec.Trace) {
+func (m *Model) SetResponse(body []byte, headers map[string][]string, trace exec.Trace, responseTooBig bool, responseSize int64) {
 	m.body = body
 	m.headers = headers
 	m.trace = trace
 	m.offset = 0
 	m.headersOffset = 0
+	m.responseTooBig = responseTooBig
+	m.responseSize = responseSize
 	m.rebuildBodyCache()
 }
 
@@ -130,6 +134,8 @@ func (m *Model) Reset() {
 	m.lines = nil
 	m.offset = 0
 	m.headersOffset = 0
+	m.responseTooBig = false
+	m.responseSize = 0
 }
 
 // TabsView returns the rendered tab strip line.
@@ -225,6 +231,10 @@ func (m Model) activeTab() responseTabID {
 
 // bodyView renders the body tab content as a multi-line string.
 func (m Model) bodyView() string {
+	if m.responseTooBig {
+		muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
+		return muted.Render(" response is %s - too large to display", formatSize(m.responseSize))
+	}
 	if len(m.lines) == 0 {
 		return lipgloss.NewStyle().Foreground(theme.Current.TextMuted).
 			Render("  send a request to see the response")
@@ -415,7 +425,7 @@ func (m Model) traceView() string {
 
 // rebuildBodyCache prepares the body lines for display.
 func (m *Model) rebuildBodyCache() {
-	if len(m.body) == 0 {
+	if len(m.body) == 0 || m.responseTooBig {
 		m.lines = nil
 		return
 	}
@@ -498,4 +508,13 @@ func (m *Model) scrollHeaders(delta int) {
 	viewLines := max(1, m.height)
 	maxOffset := max(0, total-viewLines)
 	m.headersOffset = max(0, min(m.headersOffset+delta, maxOffset))
+}
+
+// formatSize formats a size as a human-readable string.
+func formatSize(b int64) string {
+	const mb = 1024 * 1024
+	if b >= mb {
+		return fmt.Sprintf("%.1fMB", float64(b)/float64(mb))
+	}
+	return fmt.Sprintf("%.1fKB", float64(b)/1024)
 }

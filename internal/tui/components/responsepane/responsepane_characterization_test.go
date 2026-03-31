@@ -18,7 +18,7 @@ func TestCharacterization_BodyPagingAndClamping(t *testing.T) {
 	for i := range bodyLines {
 		bodyLines[i] = "line"
 	}
-	m.SetResponse([]byte(strings.Join(bodyLines, "\n")), map[string][]string{"Content-Type": {"text/plain"}}, exec.Trace{})
+	m.SetResponse([]byte(strings.Join(bodyLines, "\n")), map[string][]string{"Content-Type": {"text/plain"}}, exec.Trace{}, false, 0)
 
 	var handled bool
 	m, _, handled = m.Update(tea.KeyPressMsg(tea.Key{Code: 'd', Mod: tea.ModCtrl}))
@@ -55,7 +55,7 @@ func TestCharacterization_HeadersPagingAndClamping(t *testing.T) {
 	for i := 0; i < 24; i++ {
 		headersMap[fmt.Sprintf("X-Header-%02d", i)] = []string{strings.Repeat("v", i+1)}
 	}
-	m.SetResponse([]byte("ok"), headersMap, exec.Trace{})
+	m.SetResponse([]byte("ok"), headersMap, exec.Trace{}, false, 0)
 
 	// Move from body -> headers tab.
 	m, _, _ = m.Update(tea.KeyPressMsg(tea.Key{Code: ']', Text: "]"}))

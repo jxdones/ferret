@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+
 	"github.com/jxdones/ferret/internal/collection"
 	"github.com/jxdones/ferret/internal/env"
 	"github.com/jxdones/ferret/internal/exec"
@@ -35,7 +37,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		result, err := exec.Execute(request, environment)
+		result, err := exec.Execute(context.Background(), request, environment)
 		if err != nil {
 			return err
 		}
