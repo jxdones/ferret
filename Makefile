@@ -1,5 +1,5 @@
 TARGET := ferret
-VERSION := 0.2.1
+VERSION := 0.2.2
 GO := go
 GOFMT := gofmt
 LINTER := golangci-lint
@@ -24,6 +24,9 @@ lint:
 
 clean:
 	rm -rf bin dist
+
+demo:
+	vhs assets/demo.tape
 
 release: clean
 	mkdir -p dist

@@ -129,6 +129,95 @@ func Load(dir, name string) (*Env, error) {
 	}, nil
 }
 
+// ListNamesFromAll returns the sorted union of env names across all dirs.
+// Names that appear in multiple collections are deduplicated.
+func ListNamesFromAll(dirs []string) ([]string, error) {
+	seen := make(map[string]bool)
+	for _, dir := range dirs {
+		names, err := ListNames(dir)
+		if err != nil {
+			return nil, err
+		}
+		for _, name := range names {
+			seen[name] = true
+		}
+	}
+	out := make([]string, 0, len(seen))
+	for name := range seen {
+		out = append(out, name)
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+// LoadMerged loads environments/<name>.yaml from every dir that has it and
+// merges all File layers into one. The first collection in dirs wins on key
+// collisions. Returns an error if no collection contains the named file.
+// The second return value is true when at least one key collision was detected.
+func LoadMerged(dirs []string, name string) (*Env, bool, error) {
+	shell := make(map[string]string)
+	for _, kv := range os.Environ() {
+		k, v, _ := strings.Cut(kv, "=")
+		shell[k] = v
+	}
+	merged := make(map[string]string)
+	found := false
+	collisions := false
+	for _, dir := range dirs {
+		path := filepath.Join(dir, "environments", name+".yaml")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, false, fmt.Errorf("env: read %s: %w", path, err)
+		}
+		var file map[string]string
+		if err := yaml.Unmarshal(data, &file); err != nil {
+			return nil, false, fmt.Errorf("env: parse %s: %w", path, err)
+		}
+		found = true
+		for k, v := range file {
+			if _, exists := merged[k]; !exists {
+				merged[k] = v
+			} else {
+				collisions = true
+			}
+		}
+	}
+	if !found {
+		return nil, false, fmt.Errorf("env: %q not found in any collection", name)
+	}
+	return &Env{Shell: shell, File: merged}, collisions, nil
+}
+
+// ResolveStartEnvFromAll selects and loads the startup env across all dirs.
+// Mirrors ResolveStartEnv but operates on the full set of collection dirs.
+func ResolveStartEnvFromAll(dirs []string, name string) (*Env, string, error) {
+	if len(dirs) == 0 {
+		return NewFromShell(), "", nil
+	}
+	if name != "" {
+		e, _, err := LoadMerged(dirs, name)
+		if err != nil {
+			return nil, "", err
+		}
+		return e, name, nil
+	}
+	names, err := ListNamesFromAll(dirs)
+	if err != nil {
+		return nil, "", err
+	}
+	if len(names) == 0 {
+		return NewFromShell(), "", nil
+	}
+	e, _, err := LoadMerged(dirs, names[0])
+	if err != nil {
+		return nil, "", err
+	}
+	return e, names[0], nil
+}
+
 // ListNames returns the stem of each *.yaml under environments/ (recursive).
 // Order follows filepath.WalkDir (not sorted). Callers that need a stable pick
 // (e.g. ResolveStartEnv) must sort the slice.

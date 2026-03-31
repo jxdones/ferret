@@ -22,9 +22,9 @@ func (m Model) handleEnvKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	return m, nil
 }
 
-// cycleEnv cycles through the environment variables.
+// cycleEnv cycles through the environment variables across all workspace collections.
 func (m *Model) cycleEnv() tea.Cmd {
-	if m.tab().collectionRoot == "" {
+	if len(m.collectionDirs) == 0 {
 		m.env = env.NewFromShell()
 		m.env.Session = m.copySessionVars()
 		m.envName = ""
@@ -32,7 +32,7 @@ func (m *Model) cycleEnv() tea.Cmd {
 		return m.statusbar.SetStatusWithTTL("env -> shell only", statusbar.Info, 2*time.Second)
 	}
 
-	names, err := env.ListNames(m.tab().collectionRoot)
+	names, err := env.ListNamesFromAll(m.collectionDirs)
 	if err != nil {
 		return m.statusbar.SetError(err.Error())
 	}
@@ -48,7 +48,7 @@ func (m *Model) cycleEnv() tea.Cmd {
 		return m.statusbar.SetStatusWithTTL("env -> shell only", statusbar.Info, 2*time.Second)
 	}
 
-	loaded, err := env.Load(m.tab().collectionRoot, next)
+	loaded, collisions, err := env.LoadMerged(m.collectionDirs, next)
 	if err != nil {
 		return m.statusbar.SetError(err.Error())
 	}
@@ -56,7 +56,11 @@ func (m *Model) cycleEnv() tea.Cmd {
 	m.env = loaded
 	m.envName = next
 	m.titlebar.SetEnv(next)
-	return m.statusbar.SetStatusWithTTL("env -> "+next, statusbar.Info, 2*time.Second)
+	msg := "env -> " + next
+	if collisions {
+		msg += " (key collisions)"
+	}
+	return m.statusbar.SetStatusWithTTL(msg, statusbar.Info, 2*time.Second)
 }
 
 // nextEnvOption returns the next environment variable in the order of the options.

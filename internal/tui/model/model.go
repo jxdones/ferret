@@ -141,9 +141,7 @@ func New(opts StartOptions) (Model, error) {
 	if err != nil {
 		return Model{}, fmt.Errorf("model: discover collections in %s: %w", workspaceRoot, err)
 	}
-	activeCollectionRoot := collectionDirs[0]
-
-	e, resolvedEnv, err := env.ResolveStartEnv(activeCollectionRoot, cliEnv)
+	e, resolvedEnv, err := env.ResolveStartEnvFromAll(collectionDirs, cliEnv)
 	if err != nil {
 		return Model{}, fmt.Errorf("model: environment: %w", err)
 	}

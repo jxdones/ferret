@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-03-31
+
 ### Added
 
 - **Per-tab collections.** Each tab now tracks its own active collection independently. Pressing `c` (cycle) or `C` (picker) changes only the active tab's collection, leaving other tabs unaffected. Opening a new tab starts with no collection selected. The first `c` press picks the first discovered collection.
 
 ### Changed
 
-- **No collection pre-selected on startup.** Ferret no longer auto-selects the first collection when launching into a workspace. The title bar shows an empty collection label until the user selects one via `c` or `C`. Environment resolution for the `-e` flag still uses the first discovered collection at startup.
+- **No collection pre-selected on startup.** Ferret no longer auto-selects the first collection when launching into a workspace. The title bar shows an empty collection label until the user selects one via `c` or `C`.
+
+- **Workspace-level environments.** Pressing `e` now merges `environments/<name>.yaml` from every collection in the workspace into a single env. Variables from collections listed earlier in the workspace take precedence on key collisions; when a collision is detected the status bar shows `env -> <name> (key collisions)` as a hint. Switching a tab's collection no longer reloads the env.
 
 ## [0.2.1] - 2026-03-30
 

@@ -8,7 +8,6 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	collectiondata "github.com/jxdones/ferret/internal/collection"
-	"github.com/jxdones/ferret/internal/env"
 	"github.com/jxdones/ferret/internal/tui/components/statusbar"
 	"github.com/jxdones/ferret/internal/tui/keys"
 )
@@ -120,6 +119,7 @@ func (m *Model) cycleCollection() tea.Cmd {
 }
 
 // activateCollectionAtIndex activates the collection at the given index for the active tab.
+// Env is workspace-level and is not affected by collection switches.
 func (m *Model) activateCollectionAtIndex(idx int) tea.Cmd {
 	if idx < 0 || idx >= len(m.collectionDirs) {
 		return nil
@@ -138,21 +138,6 @@ func (m *Model) activateCollectionAtIndex(idx int) tea.Cmd {
 	m.tab().requestName = ""
 	m.tab().title = "new request"
 	m.statusbar.SetIdle()
-
-	if m.envName == "" {
-		m.env = env.NewFromShell()
-		return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.tab().collectionRoot), statusbar.Info, 2*time.Second)
-	}
-
-	loaded, err := env.Load(m.tab().collectionRoot, m.envName)
-	if err != nil {
-		m.env = env.NewFromShell()
-		m.env.Session = m.copySessionVars()
-		m.titlebar.SetEnv("")
-		return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.tab().collectionRoot)+" (env unavailable, shell only)", statusbar.Warning, 3*time.Second)
-	}
-	loaded.Session = m.copySessionVars()
-	m.env = loaded
 	return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.tab().collectionRoot), statusbar.Info, 2*time.Second)
 }
 

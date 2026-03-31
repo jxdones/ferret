@@ -13,14 +13,16 @@ func (m *Model) syncChildState() {
 	m.syncTitlebarCollection()
 }
 
-// syncTitlebarCollection updates the titlebar collection label from the active tab.
+// syncTitlebarCollection updates the titlebar collection and entry labels from the active tab.
 func (m *Model) syncTitlebarCollection() {
 	root := m.tab().collectionRoot
 	if root == "" {
 		m.titlebar.SetCollection("")
+		m.titlebar.SetEntry("")
 		return
 	}
 	m.titlebar.SetCollection(filepath.Base(root))
+	m.titlebar.SetEntry(m.tab().requestName)
 }
 
 // syncChildStateWithLayout also recomputes child sizing/layout before syncing.

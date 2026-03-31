@@ -1,10 +1,21 @@
-# ferret
+<div align="center">
+  <p>
+    <h2>ferret</h2>
+  </p>
+
+  <p>Terminal API client where collections live in your repo, not the cloud. </p>
+
+  <p>
+    <img src="assets/ferret.gif" alt="Ferret demo" width="830"/>
+  </p>
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Go Version](https://img.shields.io/badge/go-1.26+-00ADD8.svg)
+</div>
 
 > **Work in progress.** ferret is under active development. Commands, keybindings, and file formats may change between versions.
 
-Your API requests belong in your repo.
-
-ferret is a terminal API client where collections are plain YAML files—sitting next to your code, versioned in git, and reviewable in a PR. No cloud accounts, no sync buttons, and no proprietary formats.
+ferret is a terminal API client where collections are plain YAML files, sitting next to your code, versioned in git, and reviewable in a PR. No cloud accounts, no sync buttons, and no proprietary formats.
 
 Open the TUI to explore interactively. Run requests in CI with the CLI. Same files, same environments, same behavior everywhere.
 
@@ -25,10 +36,10 @@ ferret is a single static binary with no cloud account, background sync process,
 Collections are plain YAML files in your repo, not a proprietary database. Review request changes with `git diff`, discuss them in pull requests, and version them with the rest of your code.
 
 ### Multi-tab request management
-Keep multiple requests open side-by-side and switch instantly with `ctrl+n` / `ctrl+p`. Each tab keeps its own request state, so you can compare flows or iterate without losing in-progress work.
+Keep multiple requests open side-by-side and switch instantly with `ctrl+n` / `ctrl+p`. Each tab keeps its own request state and active collection, so you can work against different services simultaneously without losing in-progress work.
 
 ### Multi-collection workspaces
-Point ferret at a parent directory and it discovers collections automatically. Jump between workspaces with `c` or open the collection picker with `C` to move across services quickly.
+Point ferret at a parent directory and it discovers collections automatically. Each tab tracks its own active collection. Switch the active tab's collection with `c` or pick one with `C` without affecting other tabs.
 
 ### CLI for automation
 `ferret run` executes requests from collection files and exits cleanly for scripting. Use it in CI, pipe output into tools like `jq`, and reuse the exact same request definitions from local development.
@@ -79,7 +90,7 @@ base_url: https://example.com
 
 ## Environments
 
-- **TUI** (`ferret`): pass `--env` / `-e` to load `environments/<name>.yaml` from the active collection. Omit it and ferret loads the first env alphabetically if any exist; otherwise runs shell-only (OS env vars, no YAML layer).
+- **TUI** (`ferret`): pass `--env` / `-e` to load `environments/<name>.yaml` merged from every collection in the workspace. Omit it and ferret loads the first env alphabetically if any exist. Otherwise runs shell-only (OS env vars, no YAML layer). When the same key appears in multiple collections, the first collection listed wins. Switching a tab's collection does not change the active env.
 - **`ferret run`**: pass `-e` with the env name. No auto-pick; empty name is not supported for file-backed envs.
 
 ## Multi-Collection Workspace
@@ -88,10 +99,10 @@ Point ferret at a parent directory containing multiple collections, then:
 
 | Key | Action |
 |-----|--------|
-| `c` | cycle collections |
-| `C` | open collection picker |
-| `e` | cycle environments |
-| `/` | search requests in active collection |
+| `c` | cycle collections for the active tab |
+| `C` | open collection picker for the active tab |
+| `e` | cycle environments (workspace-wide) |
+| `/` | search requests in active tab's collection |
 
 ## Keybindings
 
@@ -100,10 +111,11 @@ Point ferret at a parent directory containing multiple collections, then:
 | Key | Action |
 |-----|--------|
 | `ctrl+r` | send request |
+| `ctrl+x` | cancel in-flight request |
 | `n` | new request |
 | `/` | open request finder |
-| `c` | cycle collection |
-| `C` | pick collection |
+| `c` | cycle collection (active tab) |
+| `C` | pick collection (active tab) |
 | `e` | cycle environment |
 | `m` | cycle HTTP method |
 | `M` | open method picker |
