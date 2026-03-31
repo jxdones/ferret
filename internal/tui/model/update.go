@@ -19,7 +19,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusbar.HandleExpired(msg)
 		return m, nil
 	case RequestStartedMsg:
-		next, cmd := m.onRequestStarted()
+		next, cmd := m.onRequestStarted(msg)
 		return next, cmd
 	case RequestFinishedMsg:
 		next, cmd := m.onRequestFinished(msg)
@@ -102,18 +102,22 @@ func (m Model) handleGlobalKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 		m.helpExpanded = !m.helpExpanded
 		m.syncChildStateWithLayout()
 	case key.Matches(msg, keys.Default.NextTab):
-		m.switchTab(m.activeTab + 1)
+		cmd := m.switchTab(m.activeTab + 1)
+		return m, cmd
 	case key.Matches(msg, keys.Default.PrevTab):
-		m.switchTab(m.activeTab - 1)
+		cmd := m.switchTab(m.activeTab - 1)
+		return m, cmd
 	case key.Matches(msg, keys.Default.NewTab):
-		m.newTab()
+		cmd := m.newTab()
+		return m, cmd
 	case key.Matches(msg, keys.Default.CloseTab):
-		m.closeTab()
+		cmd := m.closeTab()
+		return m, cmd
 	case key.Matches(msg, keys.Default.URLFocus),
 		msg.String() == "tab",
 		msg.String() == "shift+tab":
 		return m.handleNavigationKey(msg)
-	case key.Matches(msg, keys.Default.Send),
+	case key.Matches(msg, keys.Default.SendRequest),
 		key.Matches(msg, keys.Default.NewRequest),
 		key.Matches(msg, keys.Default.MethodCycle),
 		key.Matches(msg, keys.Default.MethodPicker):
@@ -124,6 +128,13 @@ func (m Model) handleGlobalKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 		return m.handleCollectionKey(msg)
 	case key.Matches(msg, keys.Default.EnvCycle):
 		return m.handleEnvKey(msg)
+	case key.Matches(msg, keys.Default.CancelRequest):
+		if m.tab().isLoading && m.tab().cancel != nil {
+			m.tab().cancel()
+			m.tab().isLoading = false
+			m.tab().cancel = nil
+			return m, m.statusbar.SetError("request cancelled")
+		}
 	}
 	return m, nil
 }

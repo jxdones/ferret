@@ -203,6 +203,10 @@ func (m Model) renderLeft() string {
 // renderRight renders the right side of the status bar with the response
 // metadata.
 func (m Model) renderRight() string {
+	if m.spinning {
+		cancel := lipgloss.NewStyle().Foreground(theme.Current.RequestCancel)
+		return cancel.Render("^x to cancel")
+	}
 	if m.response == nil {
 		return ""
 	}

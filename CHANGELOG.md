@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-03-30
+
+- **Per-tab loading state and request cancellation.** Each tab now tracks its own loading state independently. While a request is in flight, the status bar shows a spinner on the left and `^x to cancel` on the right. Pressing `ctrl+x` cancels the active tab's request immediately. Closing a tab with an in-flight request also cancels it automatically. Switching between tabs correctly reflects each tab's state. A loading tab resumes its spinner, a finished tab restores its response metadata.
+
 ### Fixed
 
 - **Per-tab response isolation.** Responses now always land in the tab that issued the request, regardless of which tab is active when the response arrives. Previously, switching tabs while a request was in flight would cause the response to overwrite the wrong tab and steal focus. Each in-flight request now carries a stable tab ID so concurrent requests across multiple tabs resolve independently.

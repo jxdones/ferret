@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -172,62 +173,236 @@ func TestBuildRequest_IncludesBody(t *testing.T) {
 	}
 }
 
-func TestOnRequestFinished_LandsOnCorrectTab(t *testing.T) {
-	m := newTestModel(t)
-	m.newTab()
-	m.activeTab = 0
-
-	msg := RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte(`{"ok":true}`)}
-	next, _ := m.onRequestFinished(msg)
-
-	tab0View := next.tabs[0].responsePane.View().Content
-	tab1View := next.tabs[1].responsePane.View().Content
-
-	if strings.Contains(tab0View, "send a request") {
-		t.Fatal("tab 0 should have a response, not the empty placeholder")
+func TestOnRequestFinished(t *testing.T) {
+	tests := []struct {
+		name  string
+		setup func(*Model)
+		msg   func(Model) RequestFinishedMsg
+		check func(*testing.T, Model)
+	}{
+		{
+			name:  "response_lands_on_correct_tab_leaves_other_tab_empty",
+			setup: func(m *Model) { m.newTab(); m.activeTab = 0 },
+			msg: func(m Model) RequestFinishedMsg {
+				return RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte(`{"ok":true}`)}
+			},
+			check: func(t *testing.T, next Model) {
+				if strings.Contains(next.tabs[0].responsePane.View().Content, "send a request") {
+					t.Fatal("tab 0 should have a response, not the empty placeholder")
+				}
+				if !strings.Contains(next.tabs[1].responsePane.View().Content, "send a request") {
+					t.Fatal("tab 1 should still show the empty placeholder")
+				}
+			},
+		},
+		{
+			name: "does_not_steal_focus_when_finished_tab_is_not_active",
+			setup: func(m *Model) {
+				m.newTab()
+				m.activeTab = 1
+				m.focus = focusRequestPane
+			},
+			msg: func(m Model) RequestFinishedMsg {
+				return RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte("hi")}
+			},
+			check: func(t *testing.T, next Model) {
+				if next.focus != focusRequestPane {
+					t.Fatalf("focus = %v, want focusRequestPane", next.focus)
+				}
+			},
+		},
+		{
+			name:  "moves_focus_to_response_pane_when_finished_tab_is_active",
+			setup: func(m *Model) { m.focus = focusRequestPane },
+			msg: func(m Model) RequestFinishedMsg {
+				return RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte("hi")}
+			},
+			check: func(t *testing.T, next Model) {
+				if next.focus != focusResponsePane {
+					t.Fatalf("focus = %v, want focusResponsePane", next.focus)
+				}
+			},
+		},
+		{
+			name:  "ignores_unknown_tab_id",
+			setup: func(m *Model) {},
+			msg: func(m Model) RequestFinishedMsg {
+				return RequestFinishedMsg{TabID: 999, Body: []byte("stale")}
+			},
+			check: func(t *testing.T, next Model) {
+				if next.focus != focusRequestPane {
+					t.Fatalf("focus = %v, want focusRequestPane (unchanged)", next.focus)
+				}
+			},
+		},
 	}
-	if !strings.Contains(tab1View, "send a request") {
-		t.Fatal("tab 1 should still show the empty placeholder")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t)
+			tt.setup(&m)
+			next, _ := m.onRequestFinished(tt.msg(m))
+			tt.check(t, next)
+		})
 	}
 }
 
-func TestOnRequestFinished_DoesNotStealFocusFromOtherTab(t *testing.T) {
-	m := newTestModel(t)
-	m.newTab()
-	m.activeTab = 1
-	m.focus = focusRequestPane
-
-	msg := RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte("hi")}
-	next, _ := m.onRequestFinished(msg)
-
-	if next.focus != focusRequestPane {
-		t.Fatalf("focus = %v, want focusRequestPane (should not steal focus from active tab)", next.focus)
+func TestOnRequestStarted(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(*Model)
+		wantSpinner bool
+	}{
+		{
+			name:        "starts_spinner_for_active_tab",
+			setup:       func(m *Model) {},
+			wantSpinner: true,
+		},
+		{
+			name:        "no_spinner_for_background_tab",
+			setup:       func(m *Model) { m.newTab() }, // activeTab = 1, tab 0 is background
+			wantSpinner: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t)
+			tt.setup(&m)
+			_, cmd := m.onRequestStarted(RequestStartedMsg{TabID: m.tabs[0].id})
+			if tt.wantSpinner && cmd == nil {
+				t.Fatal("expected spinner cmd")
+			}
+			if !tt.wantSpinner && cmd != nil {
+				t.Fatal("did not expect spinner cmd")
+			}
+		})
 	}
 }
 
-func TestOnRequestFinished_StealsFocusWhenActiveTab(t *testing.T) {
-	m := newTestModel(t)
-	m.focus = focusRequestPane
+func TestOnRequestFailed(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(*Model)
+		isLoading   bool
+		wantLoading bool
+		wantCmd     bool
+	}{
+		{
+			name:        "shows_error_and_clears_loading_on_active_tab",
+			setup:       func(m *Model) {},
+			isLoading:   true,
+			wantLoading: false,
+			wantCmd:     true,
+		},
+		{
+			name:        "clears_loading_silently_on_background_tab",
+			setup:       func(m *Model) { m.newTab() }, // activeTab = 1, tab 0 is background
+			isLoading:   true,
+			wantLoading: false,
+			wantCmd:     false,
+		},
+		{
+			name:        "no_op_when_tab_is_not_loading",
+			setup:       func(m *Model) {},
+			isLoading:   false,
+			wantLoading: false,
+			wantCmd:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t)
+			tt.setup(&m)
+			m.tabs[0].isLoading = tt.isLoading
 
-	msg := RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte("hi")}
-	next, _ := m.onRequestFinished(msg)
+			next, cmd := m.onRequestFailed(RequestFailedMsg{TabID: m.tabs[0].id, Error: errors.New("err")})
 
-	if next.focus != focusResponsePane {
-		t.Fatalf("focus = %v, want focusResponsePane", next.focus)
+			if next.tabs[0].isLoading != tt.wantLoading {
+				t.Fatalf("isLoading = %v, want %v", next.tabs[0].isLoading, tt.wantLoading)
+			}
+			if tt.wantCmd && cmd == nil {
+				t.Fatal("expected a cmd")
+			}
+			if !tt.wantCmd && cmd != nil {
+				t.Fatal("did not expect a cmd")
+			}
+		})
 	}
 }
 
-func TestOnRequestFinished_IgnoresStaleTabID(t *testing.T) {
-	m := newTestModel(t)
-	m.newTab()
-	m.closeTab()
+func TestCloseTab(t *testing.T) {
+	tests := []struct {
+		name          string
+		isLoading     bool
+		wantCancelled bool
+	}{
+		{
+			name:          "cancels_in_flight_request",
+			isLoading:     true,
+			wantCancelled: true,
+		},
+		{
+			name:          "no_cancel_call_when_tab_is_not_loading",
+			isLoading:     false,
+			wantCancelled: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t)
+			m.newTab() // need 2 tabs so closing is allowed
 
-	originalFocus := m.focus
-	msg := RequestFinishedMsg{TabID: 999, Body: []byte("stale")}
-	next, _ := m.onRequestFinished(msg)
+			cancelled := false
+			m.tabs[0].isLoading = tt.isLoading
+			if tt.isLoading {
+				m.tabs[0].cancel = func() { cancelled = true }
+			}
 
-	if next.focus != originalFocus {
-		t.Fatalf("focus changed on stale TabID, want no change")
+			m.switchTab(0)
+			m.closeTab()
+
+			if cancelled != tt.wantCancelled {
+				t.Fatalf("cancelled = %v, want %v", cancelled, tt.wantCancelled)
+			}
+		})
+	}
+}
+
+func TestSwitchTab_StatusbarSync(t *testing.T) {
+	tests := []struct {
+		name    string
+		setup   func(*Model)
+		wantCmd bool
+	}{
+		{
+			name: "returns_spinner_cmd_when_switching_to_loading_tab",
+			setup: func(m *Model) {
+				m.newTab()
+				m.tabs[0].isLoading = true
+			},
+			wantCmd: true,
+		},
+		{
+			name: "no_spinner_when_switching_to_tab_with_completed_response",
+			setup: func(m *Model) {
+				m.newTab()
+				resp := statusbar.Response{StatusCode: 200}
+				m.tabs[0].lastResponse = &resp
+			},
+			wantCmd: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t)
+			tt.setup(&m)
+			cmd := m.switchTab(0)
+			if tt.wantCmd && cmd == nil {
+				t.Fatal("expected a cmd")
+			}
+			if !tt.wantCmd && cmd != nil {
+				t.Fatalf("did not expect a cmd, got %v", cmd)
+			}
+		})
 	}
 }
 

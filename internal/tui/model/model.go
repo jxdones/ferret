@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,6 +38,9 @@ type requestTab struct {
 	urlbar       urlbar.Model
 	requestPane  requestpane.Model
 	responsePane responsepane.Model
+	isLoading    bool
+	cancel       context.CancelFunc
+	lastResponse *statusbar.Response
 }
 
 // Model is the main application model for the ferret TUI.
@@ -151,12 +155,14 @@ func New(opts StartOptions) (Model, error) {
 	m := Model{
 		titlebar: titlebar.New(),
 		tabs: []requestTab{{
+			id:           1,
 			title:        "new request",
 			urlbar:       u,
 			requestPane:  rp,
 			responsePane: responsepane.New(),
 		}},
 		activeTab:       0,
+		nextTabID:       2,
 		collection:      collection.New(),
 		workspacePicker: workspacepicker.New(),
 		statusbar:       statusbar.New(),
@@ -185,7 +191,7 @@ func (m Model) tab() *requestTab {
 }
 
 // newTab opens a new empty request tab and focuses its URL bar.
-func (m *Model) newTab() {
+func (m *Model) newTab() tea.Cmd {
 	// increment the next tab ID and use it for the new tab
 	m.nextTabID++
 	u := urlbar.New()
@@ -200,27 +206,34 @@ func (m *Model) newTab() {
 	m.activeTab = len(m.tabs) - 1
 	m.focus = focusURLBar
 	m.syncChildStateWithLayout()
+	return m.syncStatusbarToActiveTab()
 }
 
 // closeTab removes the active tab. Does nothing if only one tab is open.
-func (m *Model) closeTab() {
+func (m *Model) closeTab() tea.Cmd {
 	if len(m.tabs) <= 1 {
-		return
+		return nil
+	}
+	if t := m.tabs[m.activeTab]; t.cancel != nil {
+		t.cancel()
 	}
 	m.tabs = append(m.tabs[:m.activeTab], m.tabs[m.activeTab+1:]...)
 	if m.activeTab >= len(m.tabs) {
 		m.activeTab = len(m.tabs) - 1
 	}
 	m.syncChildStateWithLayout()
+	return m.syncStatusbarToActiveTab()
 }
 
 // switchTab switches to the tab at index i, wrapping around.
-func (m *Model) switchTab(i int) {
+func (m *Model) switchTab(i int) tea.Cmd {
 	n := len(m.tabs)
 	m.activeTab = ((i % n) + n) % n
 	m.syncChildStateWithLayout()
+	return m.syncStatusbarToActiveTab()
 }
 
+// resolveWorkspaceRoot resolves the workspace root from the given directory.
 func resolveWorkspaceRoot(dir string) (string, error) {
 	inputDir := dir
 	if inputDir == "" || inputDir == "." {
@@ -235,4 +248,18 @@ func resolveWorkspaceRoot(dir string) (string, error) {
 		return "", fmt.Errorf("model: resolve directory %q: %w", inputDir, err)
 	}
 	return abs, nil
+}
+
+// syncStatusbarToActiveTab synchronizes the status bar to the active tab.
+func (m *Model) syncStatusbarToActiveTab() tea.Cmd {
+	tab := m.tab()
+	if tab.isLoading {
+		return m.statusbar.SetSending()
+	}
+	if tab.lastResponse != nil {
+		m.statusbar.SetResponse(*tab.lastResponse)
+		return nil
+	}
+	m.statusbar.SetIdle()
+	return nil
 }

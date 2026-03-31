@@ -58,6 +58,9 @@ type Theme struct {
 
 	// TitleBarEntry highlights the loaded collection entry name.
 	TitleBarEntry color.Color
+
+	// RequestCancel is the color for the "^x to cancel" text in the status bar.
+	RequestCancel color.Color
 }
 
 // Current is the process-wide active theme. Components read it for styling.
@@ -132,5 +135,7 @@ func DefaultTheme() Theme {
 		TitleBarCollection: cc("#87ceeb", "117", "14"),
 		TitleBarSeparator:  cc("#6b7a8f", "246", "8"),
 		TitleBarEntry:      cc("#ff9500", "208", "3"),
+
+		RequestCancel: cc("#ff5f87", "204", "1"),
 	}
 }

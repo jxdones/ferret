@@ -20,7 +20,9 @@ const (
 	formatHTML = "HTML"
 )
 
-type RequestStartedMsg struct{}
+type RequestStartedMsg struct {
+	TabID int
+}
 
 type RequestFinishedMsg struct {
 	TabID          int
@@ -33,17 +35,21 @@ type RequestFinishedMsg struct {
 }
 
 type RequestFailedMsg struct {
+	TabID int
 	Error error
 }
 
 // handleRequestKey handles the key press for the request.
 func (m Model) handleRequestKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	switch {
-	case key.Matches(msg, keys.Default.Send):
+	case key.Matches(msg, keys.Default.SendRequest):
 		if strings.TrimSpace(m.tab().urlbar.URL()) == "" {
 			return m, m.statusbar.SetError("url is required")
 		}
-		return m, sendRequestCmd(m.buildRequest(), m.env, m.tab().id)
+		ctx, cancel := context.WithCancel(context.Background())
+		m.tab().cancel = cancel
+		m.tab().isLoading = true
+		return m, sendRequestCmd(m.buildRequest(), m.env, m.tab().id, ctx)
 	case key.Matches(msg, keys.Default.NewRequest):
 		cmd := m.startNewRequest()
 		return m, cmd
@@ -80,22 +86,26 @@ func (m Model) handleMethodModalKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 }
 
 // onRequestStarted handles the request started event.
-func (m Model) onRequestStarted() (Model, tea.Cmd) {
+func (m Model) onRequestStarted(msg RequestStartedMsg) (Model, tea.Cmd) {
 	m.activeModal = modalNone
 	m.focus = m.focusedPaneTarget()
 	m.syncChildState()
-	return m, m.statusbar.SetSending()
+	if m.tab().id == msg.TabID {
+		return m, m.statusbar.SetSending()
+	}
+	return m, nil
 }
 
 // onRequestFinished handles the request finished event.
 func (m Model) onRequestFinished(msg RequestFinishedMsg) (Model, tea.Cmd) {
-	m.statusbar.SetResponse(msg.Response)
 	for i := range m.tabs {
 		if m.tabs[i].id == msg.TabID {
-			m.tabs[i].responsePane.SetResponse(
-				msg.Body, msg.Headers, msg.Trace, msg.ResponseTooBig, msg.ResponseSize,
-			)
+			m.tabs[i].responsePane.SetResponse(msg.Body, msg.Headers, msg.Trace, msg.ResponseTooBig, msg.ResponseSize)
+			m.tabs[i].isLoading = false
+			m.tabs[i].cancel = nil
+			m.tabs[i].lastResponse = &msg.Response
 			if i == m.activeTab {
+				m.statusbar.SetResponse(msg.Response)
 				m.focus = focusResponsePane
 				m.lastPane = responsePane
 				m.syncChildState()
@@ -108,7 +118,20 @@ func (m Model) onRequestFinished(msg RequestFinishedMsg) (Model, tea.Cmd) {
 
 // onRequestFailed handles the request failed event.
 func (m Model) onRequestFailed(msg RequestFailedMsg) (Model, tea.Cmd) {
-	return m, m.statusbar.SetError(msg.Error.Error())
+	for i := range m.tabs {
+		if m.tabs[i].id == msg.TabID {
+			if !m.tabs[i].isLoading {
+				return m, nil
+			}
+			m.tabs[i].isLoading = false
+			m.tabs[i].cancel = nil
+			if i == m.activeTab {
+				return m, m.statusbar.SetError(msg.Error.Error())
+			}
+			break
+		}
+	}
+	return m, nil
 }
 
 // startNewRequest starts a new request.
@@ -131,13 +154,13 @@ func (m *Model) startNewRequest() tea.Cmd {
 }
 
 // sendRequestCmd sends a command to send a request and returns the appropriate message based on the result.
-func sendRequestCmd(req collectiondata.Request, e *env.Env, tabIndex int) tea.Cmd {
+func sendRequestCmd(req collectiondata.Request, e *env.Env, tabIndex int, ctx context.Context) tea.Cmd {
 	return tea.Batch(
-		func() tea.Msg { return RequestStartedMsg{} },
+		func() tea.Msg { return RequestStartedMsg{TabID: tabIndex} },
 		func() tea.Msg {
-			result, err := exec.Execute(context.Background(), req, e)
+			result, err := exec.Execute(ctx, req, e)
 			if err != nil {
-				return RequestFailedMsg{Error: err}
+				return RequestFailedMsg{TabID: tabIndex, Error: err}
 			}
 			return RequestFinishedMsg{
 				TabID: tabIndex,
