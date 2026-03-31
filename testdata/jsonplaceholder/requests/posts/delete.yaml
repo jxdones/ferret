@@ -1,0 +1,3 @@
+name: delete post
+method: DELETE
+url: "{{jsonplaceholder_base_url}}/posts/1"

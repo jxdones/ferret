@@ -1,0 +1,9 @@
+name: create post
+method: POST
+url: "{{jsonplaceholder_base_url}}/posts"
+body: |
+  {
+    "title": "foo",
+    "body": "bar",
+    "userId": 1
+  }

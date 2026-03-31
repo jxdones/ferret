@@ -1,0 +1,9 @@
+name: update post
+method: PUT
+url: "{{jsonplaceholder_base_url}}/posts/1"
+body: |
+  {
+    "title": "foos",
+    "body": "bars",
+    "userId": 1
+  }
