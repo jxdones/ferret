@@ -104,7 +104,12 @@ func (m Model) handleGlobalFocusKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd, b
 // handleURLBarKeyPress handles the key press for the URL bar.
 func (m Model) handleURLBarKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	switch msg.String() {
-	case "esc", "enter":
+	case "enter":
+		m.focus = focusRequestPane
+		m.lastPane = requestPane
+		m.syncChildState()
+		return m, nil
+	case "esc":
 		m.focus = m.focusedPaneTarget()
 		m.syncChildState()
 		return m, nil

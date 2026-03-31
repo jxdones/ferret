@@ -23,6 +23,7 @@ const (
 type RequestStartedMsg struct{}
 
 type RequestFinishedMsg struct {
+	TabID          int
 	Response       statusbar.Response
 	Body           []byte
 	Headers        map[string][]string
@@ -42,7 +43,7 @@ func (m Model) handleRequestKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 		if strings.TrimSpace(m.tab().urlbar.URL()) == "" {
 			return m, m.statusbar.SetError("url is required")
 		}
-		return m, sendRequestCmd(m.buildRequest(), m.env)
+		return m, sendRequestCmd(m.buildRequest(), m.env, m.tab().id)
 	case key.Matches(msg, keys.Default.NewRequest):
 		cmd := m.startNewRequest()
 		return m, cmd
@@ -89,10 +90,19 @@ func (m Model) onRequestStarted() (Model, tea.Cmd) {
 // onRequestFinished handles the request finished event.
 func (m Model) onRequestFinished(msg RequestFinishedMsg) (Model, tea.Cmd) {
 	m.statusbar.SetResponse(msg.Response)
-	m.tab().responsePane.SetResponse(msg.Body, msg.Headers, msg.Trace, msg.ResponseTooBig, msg.ResponseSize)
-	m.focus = focusResponsePane
-	m.lastPane = responsePane
-	m.syncChildState()
+	for i := range m.tabs {
+		if m.tabs[i].id == msg.TabID {
+			m.tabs[i].responsePane.SetResponse(
+				msg.Body, msg.Headers, msg.Trace, msg.ResponseTooBig, msg.ResponseSize,
+			)
+			if i == m.activeTab {
+				m.focus = focusResponsePane
+				m.lastPane = responsePane
+				m.syncChildState()
+			}
+			break
+		}
+	}
 	return m, nil
 }
 
@@ -121,7 +131,7 @@ func (m *Model) startNewRequest() tea.Cmd {
 }
 
 // sendRequestCmd sends a command to send a request and returns the appropriate message based on the result.
-func sendRequestCmd(req collectiondata.Request, e *env.Env) tea.Cmd {
+func sendRequestCmd(req collectiondata.Request, e *env.Env, tabIndex int) tea.Cmd {
 	return tea.Batch(
 		func() tea.Msg { return RequestStartedMsg{} },
 		func() tea.Msg {
@@ -130,6 +140,7 @@ func sendRequestCmd(req collectiondata.Request, e *env.Env) tea.Cmd {
 				return RequestFailedMsg{Error: err}
 			}
 			return RequestFinishedMsg{
+				TabID: tabIndex,
 				Response: statusbar.Response{
 					StatusCode: result.Status,
 					StatusText: result.StatusText,

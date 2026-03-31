@@ -31,6 +31,7 @@ type StartOptions struct {
 
 // requestTab holds the per-tab request/response context.
 type requestTab struct {
+	id           int
 	title        string
 	requestName  string // non-empty when loaded from a collection entry
 	urlbar       urlbar.Model
@@ -61,6 +62,7 @@ type Model struct {
 	collectionDirs  []string
 	collectionRoot  string
 	collectionIndex int
+	nextTabID       int
 	env             *env.Env
 	// envName is the active file env stem (e.g. "dev") or empty for shell-only.
 	envName string
@@ -103,11 +105,13 @@ func New(opts StartOptions) (Model, error) {
 		m := Model{
 			titlebar: titlebar.New(),
 			tabs: []requestTab{{
+				id:           1,
 				title:        "new request",
 				urlbar:       u,
 				requestPane:  rp,
 				responsePane: responsepane.New(),
 			}},
+			nextTabID:       2,
 			activeTab:       0,
 			collection:      collection.New(),
 			workspacePicker: workspacepicker.New(),
@@ -182,9 +186,12 @@ func (m Model) tab() *requestTab {
 
 // newTab opens a new empty request tab and focuses its URL bar.
 func (m *Model) newTab() {
+	// increment the next tab ID and use it for the new tab
+	m.nextTabID++
 	u := urlbar.New()
 	u.SetMethod("GET")
 	m.tabs = append(m.tabs, requestTab{
+		id:           m.nextTabID,
 		title:        "new request",
 		urlbar:       u,
 		requestPane:  requestpane.New(),

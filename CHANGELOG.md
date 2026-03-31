@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Per-tab response isolation.** Responses now always land in the tab that issued the request, regardless of which tab is active when the response arrives. Previously, switching tabs while a request was in flight would cause the response to overwrite the wrong tab and steal focus. Each in-flight request now carries a stable tab ID so concurrent requests across multiple tabs resolve independently.
+
+- **URL bar `enter` focus.** Pressing `enter` in the URL bar now moves focus to the request pane instead of the last active pane. Previously, if the response pane had been active, `enter` would send focus there instead of the request body editor.
+
 ## [0.2.0] - 2026-03-30
 
 ### Added

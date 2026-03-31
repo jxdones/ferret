@@ -2,6 +2,7 @@ package model
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
@@ -171,6 +172,65 @@ func TestBuildRequest_IncludesBody(t *testing.T) {
 	}
 }
 
+func TestOnRequestFinished_LandsOnCorrectTab(t *testing.T) {
+	m := newTestModel(t)
+	m.newTab()
+	m.activeTab = 0
+
+	msg := RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte(`{"ok":true}`)}
+	next, _ := m.onRequestFinished(msg)
+
+	tab0View := next.tabs[0].responsePane.View().Content
+	tab1View := next.tabs[1].responsePane.View().Content
+
+	if strings.Contains(tab0View, "send a request") {
+		t.Fatal("tab 0 should have a response, not the empty placeholder")
+	}
+	if !strings.Contains(tab1View, "send a request") {
+		t.Fatal("tab 1 should still show the empty placeholder")
+	}
+}
+
+func TestOnRequestFinished_DoesNotStealFocusFromOtherTab(t *testing.T) {
+	m := newTestModel(t)
+	m.newTab()
+	m.activeTab = 1
+	m.focus = focusRequestPane
+
+	msg := RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte("hi")}
+	next, _ := m.onRequestFinished(msg)
+
+	if next.focus != focusRequestPane {
+		t.Fatalf("focus = %v, want focusRequestPane (should not steal focus from active tab)", next.focus)
+	}
+}
+
+func TestOnRequestFinished_StealsFocusWhenActiveTab(t *testing.T) {
+	m := newTestModel(t)
+	m.focus = focusRequestPane
+
+	msg := RequestFinishedMsg{TabID: m.tabs[0].id, Body: []byte("hi")}
+	next, _ := m.onRequestFinished(msg)
+
+	if next.focus != focusResponsePane {
+		t.Fatalf("focus = %v, want focusResponsePane", next.focus)
+	}
+}
+
+func TestOnRequestFinished_IgnoresStaleTabID(t *testing.T) {
+	m := newTestModel(t)
+	m.newTab()
+	m.closeTab()
+
+	originalFocus := m.focus
+	msg := RequestFinishedMsg{TabID: 999, Body: []byte("stale")}
+	next, _ := m.onRequestFinished(msg)
+
+	if next.focus != originalFocus {
+		t.Fatalf("focus changed on stale TabID, want no change")
+	}
+}
+
 func newTestModel(t *testing.T) Model {
 	t.Helper()
 
@@ -185,12 +245,14 @@ func newTestModel(t *testing.T) Model {
 		height:   40,
 		titlebar: titlebar.New(),
 		tabs: []requestTab{{
+			id:           1,
 			title:        "new request",
 			urlbar:       u,
 			requestPane:  rp,
 			responsePane: responsepane.New(),
 		}},
 		activeTab:       0,
+		nextTabID:       2,
 		collection:      collection.New(),
 		workspacePicker: workspacepicker.New(),
 		statusbar:       statusbar.New(),
