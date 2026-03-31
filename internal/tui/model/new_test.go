@@ -18,8 +18,8 @@ func TestNew_scratchNoWorkspace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if m.collectionRoot != "" {
-		t.Fatalf("collectionRoot = %q, want empty", m.collectionRoot)
+	if m.tab().collectionRoot != "" {
+		t.Fatalf("tab collectionRoot = %q, want empty", m.tab().collectionRoot)
 	}
 	if len(m.collectionDirs) != 0 {
 		t.Fatalf("len(collectionDirs) = %d, want 0", len(m.collectionDirs))
@@ -56,7 +56,12 @@ func TestNew_withCollections_resolvesDir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filepath.Base(m.collectionRoot) != "api" {
-		t.Fatalf("collectionRoot base = %q, want api", filepath.Base(m.collectionRoot))
+	// No pre-selection: the initial tab starts with no collection loaded.
+	if m.tab().collectionRoot != "" {
+		t.Fatalf("tab collectionRoot = %q, want empty (no pre-selection)", m.tab().collectionRoot)
+	}
+	// The discovered collection is available for cycling.
+	if len(m.collectionDirs) == 0 || filepath.Base(m.collectionDirs[0]) != "api" {
+		t.Fatalf("collectionDirs[0] base = %q, want api", filepath.Base(m.collectionDirs[0]))
 	}
 }

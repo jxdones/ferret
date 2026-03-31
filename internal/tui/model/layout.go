@@ -1,11 +1,26 @@
 package model
 
-import "github.com/jxdones/ferret/internal/tui/modal"
+import (
+	"path/filepath"
+
+	"github.com/jxdones/ferret/internal/tui/modal"
+)
 
 // syncChildState propagates focus and modal child state during transitions.
 func (m *Model) syncChildState() {
 	m.applyFocus()
 	m.syncModalState()
+	m.syncTitlebarCollection()
+}
+
+// syncTitlebarCollection updates the titlebar collection label from the active tab.
+func (m *Model) syncTitlebarCollection() {
+	root := m.tab().collectionRoot
+	if root == "" {
+		m.titlebar.SetCollection("")
+		return
+	}
+	m.titlebar.SetCollection(filepath.Base(root))
 }
 
 // syncChildStateWithLayout also recomputes child sizing/layout before syncing.

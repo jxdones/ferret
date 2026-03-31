@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Per-tab collections.** Each tab now tracks its own active collection independently. Pressing `c` (cycle) or `C` (picker) changes only the active tab's collection, leaving other tabs unaffected. Opening a new tab starts with no collection selected. The first `c` press picks the first discovered collection.
+
+### Changed
+
+- **No collection pre-selected on startup.** Ferret no longer auto-selects the first collection when launching into a workspace. The title bar shows an empty collection label until the user selects one via `c` or `C`. Environment resolution for the `-e` flag still uses the first discovered collection at startup.
+
 ## [0.2.1] - 2026-03-30
 
 - **Per-tab loading state and request cancellation.** Each tab now tracks its own loading state independently. While a request is in flight, the status bar shows a spinner on the left and `^x to cancel` on the right. Pressing `ctrl+x` cancels the active tab's request immediately. Closing a tab with an in-flight request also cancels it automatically. Switching between tabs correctly reflects each tab's state. A loading tab resumes its spinner, a finished tab restores its response metadata.

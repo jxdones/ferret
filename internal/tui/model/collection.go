@@ -18,7 +18,7 @@ func (m Model) handleCollectionKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	switch {
 	case key.Matches(msg, keys.Default.Collection):
 		m.collection.Reset()
-		if entries, err := collectiondata.LoadEntries(m.collectionRoot); err == nil {
+		if entries, err := collectiondata.LoadEntries(m.tab().collectionRoot); err == nil {
 			m.collection.Load(entries)
 		}
 		m.activeModal = modalCollection
@@ -31,7 +31,7 @@ func (m Model) handleCollectionKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	case key.Matches(msg, keys.Default.WorkspacePick):
 		m.workspacePicker.Reset()
 		m.workspacePicker.Load(m.collectionDirs)
-		m.workspacePicker.SetActive(m.collectionRoot)
+		m.workspacePicker.SetActive(m.tab().collectionRoot)
 		m.activeModal = modalWorkspace
 		m.lastPane = m.activePane()
 		m.focus = focusModalWorkspace
@@ -96,7 +96,7 @@ func (m Model) handleWorkspaceModalKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	return m, nil
 }
 
-// cycleCollection cycles through the collection directories.
+// cycleCollection cycles through the collection directories for the active tab.
 func (m *Model) cycleCollection() tea.Cmd {
 	if len(m.collectionDirs) == 0 {
 		return m.statusbar.SetStatusWithTTL("no collections", statusbar.Info, 2*time.Second)
@@ -104,22 +104,29 @@ func (m *Model) cycleCollection() tea.Cmd {
 	if len(m.collectionDirs) <= 1 {
 		return m.statusbar.SetStatusWithTTL("single collection workspace", statusbar.Info, 2*time.Second)
 	}
-	next := m.collectionIndex + 1
+	current := m.tab().collectionRoot
+	currentIdx := -1
+	for i, d := range m.collectionDirs {
+		if d == current {
+			currentIdx = i
+			break
+		}
+	}
+	next := currentIdx + 1
 	if next >= len(m.collectionDirs) {
 		next = 0
 	}
 	return m.activateCollectionAtIndex(next)
 }
 
-// activateCollectionAtIndex activates the collection at the given index.
+// activateCollectionAtIndex activates the collection at the given index for the active tab.
 func (m *Model) activateCollectionAtIndex(idx int) tea.Cmd {
 	if idx < 0 || idx >= len(m.collectionDirs) {
 		return nil
 	}
-	m.collectionIndex = idx
-	m.collectionRoot = m.collectionDirs[m.collectionIndex]
+	m.tab().collectionRoot = m.collectionDirs[idx]
 	m.titlebar.SetWorkspace(m.workspaceName)
-	m.titlebar.SetCollection(filepath.Base(m.collectionRoot))
+	m.titlebar.SetCollection(filepath.Base(m.tab().collectionRoot))
 	m.titlebar.SetEntry("")
 	m.tab().urlbar.SetMethod("GET")
 	m.tab().urlbar.SetURL("")
@@ -134,19 +141,19 @@ func (m *Model) activateCollectionAtIndex(idx int) tea.Cmd {
 
 	if m.envName == "" {
 		m.env = env.NewFromShell()
-		return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.collectionRoot), statusbar.Info, 2*time.Second)
+		return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.tab().collectionRoot), statusbar.Info, 2*time.Second)
 	}
 
-	loaded, err := env.Load(m.collectionRoot, m.envName)
+	loaded, err := env.Load(m.tab().collectionRoot, m.envName)
 	if err != nil {
 		m.env = env.NewFromShell()
 		m.env.Session = m.copySessionVars()
 		m.titlebar.SetEnv("")
-		return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.collectionRoot)+" (env unavailable, shell only)", statusbar.Warning, 3*time.Second)
+		return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.tab().collectionRoot)+" (env unavailable, shell only)", statusbar.Warning, 3*time.Second)
 	}
 	loaded.Session = m.copySessionVars()
 	m.env = loaded
-	return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.collectionRoot), statusbar.Info, 2*time.Second)
+	return m.statusbar.SetStatusWithTTL("collection -> "+filepath.Base(m.tab().collectionRoot), statusbar.Info, 2*time.Second)
 }
 
 // switchToCollection switches to the collection at the given path.

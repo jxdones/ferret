@@ -32,15 +32,17 @@ type StartOptions struct {
 
 // requestTab holds the per-tab request/response context.
 type requestTab struct {
-	id           int
-	title        string
-	requestName  string // non-empty when loaded from a collection entry
-	urlbar       urlbar.Model
-	requestPane  requestpane.Model
-	responsePane responsepane.Model
-	isLoading    bool
-	cancel       context.CancelFunc
-	lastResponse *statusbar.Response
+	id             int
+	title          string
+	requestName    string // non-empty when loaded from a collection entry
+	collectionRoot string
+	urlbar         urlbar.Model
+	requestPane    requestpane.Model
+	responsePane   responsepane.Model
+	cancel         context.CancelFunc
+	lastResponse   *statusbar.Response
+
+	isLoading bool
 }
 
 // Model is the main application model for the ferret TUI.
@@ -61,13 +63,11 @@ type Model struct {
 	activeTab int
 
 	// data references
-	workspaceRoot   string
-	workspaceName   string // config name for title bar; empty if none
-	collectionDirs  []string
-	collectionRoot  string
-	collectionIndex int
-	nextTabID       int
-	env             *env.Env
+	workspaceRoot  string
+	workspaceName  string // config name for title bar; empty if none
+	collectionDirs []string
+	nextTabID      int
+	env            *env.Env
 	// envName is the active file env stem (e.g. "dev") or empty for shell-only.
 	envName string
 
@@ -109,11 +109,12 @@ func New(opts StartOptions) (Model, error) {
 		m := Model{
 			titlebar: titlebar.New(),
 			tabs: []requestTab{{
-				id:           1,
-				title:        "new request",
-				urlbar:       u,
-				requestPane:  rp,
-				responsePane: responsepane.New(),
+				id:             1,
+				title:          "new request",
+				collectionRoot: "",
+				urlbar:         u,
+				requestPane:    rp,
+				responsePane:   responsepane.New(),
 			}},
 			nextTabID:       2,
 			activeTab:       0,
@@ -124,8 +125,6 @@ func New(opts StartOptions) (Model, error) {
 			workspaceRoot:   workspaceRoot,
 			workspaceName:   "",
 			collectionDirs:  nil,
-			collectionRoot:  "",
-			collectionIndex: 0,
 			env:             e,
 			envName:         "",
 			focus:           focusRequestPane,
@@ -170,8 +169,6 @@ func New(opts StartOptions) (Model, error) {
 		workspaceRoot:   workspaceRoot,
 		workspaceName:   opts.WorkspaceName,
 		collectionDirs:  collectionDirs,
-		collectionIndex: 0,
-		collectionRoot:  activeCollectionRoot,
 		env:             e,
 		envName:         resolvedEnv,
 		focus:           focusRequestPane,
@@ -179,7 +176,6 @@ func New(opts StartOptions) (Model, error) {
 	}
 
 	m.titlebar.SetWorkspace(m.workspaceName)
-	m.titlebar.SetCollection(filepath.Base(activeCollectionRoot))
 	m.titlebar.SetEnv(resolvedEnv)
 	m.syncChildStateWithLayout()
 	return m, nil

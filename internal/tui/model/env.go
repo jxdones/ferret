@@ -24,7 +24,7 @@ func (m Model) handleEnvKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 
 // cycleEnv cycles through the environment variables.
 func (m *Model) cycleEnv() tea.Cmd {
-	if m.collectionRoot == "" {
+	if m.tab().collectionRoot == "" {
 		m.env = env.NewFromShell()
 		m.env.Session = m.copySessionVars()
 		m.envName = ""
@@ -32,7 +32,7 @@ func (m *Model) cycleEnv() tea.Cmd {
 		return m.statusbar.SetStatusWithTTL("env -> shell only", statusbar.Info, 2*time.Second)
 	}
 
-	names, err := env.ListNames(m.collectionRoot)
+	names, err := env.ListNames(m.tab().collectionRoot)
 	if err != nil {
 		return m.statusbar.SetError(err.Error())
 	}
@@ -48,7 +48,7 @@ func (m *Model) cycleEnv() tea.Cmd {
 		return m.statusbar.SetStatusWithTTL("env -> shell only", statusbar.Info, 2*time.Second)
 	}
 
-	loaded, err := env.Load(m.collectionRoot, next)
+	loaded, err := env.Load(m.tab().collectionRoot, next)
 	if err != nil {
 		return m.statusbar.SetError(err.Error())
 	}
