@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Tighter file permissions for saved requests.** `SaveRequest` now creates directories with `0o700` (owner-only) and writes request files with `0o600` (owner-only read/write), down from `0o755`/`0o644`. Prevents other users on the same system from reading request files that may contain auth tokens or sensitive URLs.
+
 ## [0.2.2] - 2026-03-31
 
 ### Added

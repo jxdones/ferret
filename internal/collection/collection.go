@@ -57,7 +57,7 @@ func LoadRequest(path string) (Request, error) {
 
 // SaveRequest saves a request to a file.
 func SaveRequest(path string, request Request) error {
-	err := os.MkdirAll(filepath.Dir(path), 0o755)
+	err := os.MkdirAll(filepath.Dir(path), 0o700)
 	if err != nil {
 		return fmt.Errorf("collection: create directory for %s: %w", path, err)
 	}
@@ -65,7 +65,7 @@ func SaveRequest(path string, request Request) error {
 	if err != nil {
 		return fmt.Errorf("collection: marshal request for %s: %w", path, err)
 	}
-	err = os.WriteFile(path, data, 0o644)
+	err = os.WriteFile(path, data, 0o600)
 	if err != nil {
 		return fmt.Errorf("collection: write request to %s: %w", path, err)
 	}
