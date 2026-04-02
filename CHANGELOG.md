@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-04-02
+
+### Changed
+
+- **Context-aware shortcut hints.** The bottom shortcuts bar and the expanded `?` help view now lead with bindings for the focused area (URL bar, request pane, or response pane), then list global shortcuts. The compact bar keeps a small set of always-visible globals (`^r` send, `?` help) alongside pane-specific keys (for example `j`/`k` and `]/[` in the panes). Full help still documents tab focus, collections, tabs, and quit; `esc` (clear focus) and `q` (quit) appear in the global section.
+
 ### Fixed
 
 - **`ferret run` requires `--env`/`-e`.** Omitting the flag previously produced a confusing error that leaked the collection's filesystem path. The flag is now marked required by Cobra, which surfaces a clean `required flag(s) "env" not set` error before any internal code runs.

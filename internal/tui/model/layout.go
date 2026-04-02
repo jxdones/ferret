@@ -6,6 +6,20 @@ import (
 	"github.com/jxdones/ferret/internal/tui/modal"
 )
 
+const (
+	// fixedFrameRows is the number of terminal rows consumed by fixed UI chrome,
+	// excluding the content area and the options bar (which varies):
+	// titlebar (1) + divider (1) + requestTabs (1) + urlbar (1) + dividerSplit (1) +
+	// paneLabels (1) + tabsRow (1) + tabsDivider (1) + statusbar (2) = 10.
+	fixedFrameRows = 10
+
+	// modalWidthPercent is the fraction of terminal width used for modals.
+	modalWidthPercent = 60
+	// modalMinWidth / modalMaxWidth clamp the computed modal outer width.
+	modalMinWidth = 40
+	modalMaxWidth = 70
+)
+
 // syncChildState propagates focus and modal child state during transitions.
 func (m *Model) syncChildState() {
 	m.applyFocus()
@@ -65,11 +79,11 @@ func (m *Model) applyFocus() {
 
 // contentHeight returns the number of lines available for pane content.
 func (m Model) contentHeight() int {
-	return max(1, m.height-10-m.optionsHeight())
+	return max(1, m.height-fixedFrameRows-m.optionsHeight())
 }
 
 // modalOuterWidth computes the modal outer width clamped to screen.
 func (m Model) modalOuterWidth() int {
-	w := m.width * 60 / 100
-	return max(40, min(w, 70))
+	w := m.width * modalWidthPercent / 100
+	return max(modalMinWidth, min(w, modalMaxWidth))
 }

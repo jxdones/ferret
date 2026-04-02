@@ -47,34 +47,3 @@ var Default = Map{
 	CloseTab:      key.NewBinding(key.WithKeys("X", "shift+x"), key.WithHelp("X", "close tab")),
 	CancelRequest: key.NewBinding(key.WithKeys("ctrl+x"), key.WithHelp("^x", "cancel request")),
 }
-
-// HelpBindings returns the bindings shown in the compact footer shortcuts bar.
-func HelpBindings() []key.Binding {
-	return []key.Binding{
-		Default.SendRequest,
-		Default.NewRequest,
-		Default.Collection,
-		Default.CollectionCycle,
-		Default.WorkspacePick,
-		Default.MethodCycle,
-		Default.EnvCycle,
-		Default.Help,
-	}
-}
-
-// FullHelpGroups returns all bindings grouped by category for the ? help modal.
-func FullHelpGroups() [][]key.Binding {
-	return [][]key.Binding{
-		{Default.SendRequest, Default.NewRequest, Default.URLFocus, Default.MethodCycle, Default.MethodPicker, Default.EnvCycle},
-		{Default.Collection, Default.CollectionCycle, Default.WorkspacePick},
-		{
-			key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next main pane")),
-			key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev main pane")),
-			Default.NextTab,
-			Default.PrevTab,
-			Default.NewTab,
-			Default.CloseTab,
-		},
-		{Default.Help},
-	}
-}

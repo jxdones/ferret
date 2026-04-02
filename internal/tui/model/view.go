@@ -10,7 +10,10 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jxdones/ferret/internal/tui/common"
+	"github.com/jxdones/ferret/internal/tui/components/requestpane"
+	"github.com/jxdones/ferret/internal/tui/components/responsepane"
 	"github.com/jxdones/ferret/internal/tui/components/shortcuts"
+	"github.com/jxdones/ferret/internal/tui/components/urlbar"
 	"github.com/jxdones/ferret/internal/tui/keys"
 	"github.com/jxdones/ferret/internal/tui/modal"
 	"github.com/jxdones/ferret/internal/tui/theme"
@@ -35,8 +38,8 @@ func (m Model) render() string {
 
 // renderBase renders the full screen without any modal overlay.
 func (m Model) renderBase() string {
-	// Fixed top rows: titlebar, divider, urlbar, dividerSplit, paneLabels, tabsRow, tabsDivider = 7
-	// Bottom: statusbar (2) + dynamic options height
+	// Fixed top rows: titlebar, divider, requestTabs, urlbar, dividerSplit, paneLabels, tabsRow, tabsDivider = 8
+	// Bottom: statusbar (2) + dynamic options height (see fixedFrameRows in layout.go)
 	sections := []string{
 		m.titlebar.View().Content,
 		m.renderDivider(),
@@ -98,9 +101,9 @@ func (m Model) renderOptions() string {
 		h.Styles.FullDesc = lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
 		h.Styles.FullSeparator = lipgloss.NewStyle().Foreground(theme.Current.DividerBorder)
 		h.Styles.Ellipsis = lipgloss.NewStyle().Foreground(theme.Current.DividerBorder)
-		content = h.FullHelpView(keys.FullHelpGroups())
+		content = h.FullHelpView(m.fullHelpBindings())
 	} else {
-		content = shortcuts.RenderShortcuts(m.width, keys.HelpBindings())
+		content = shortcuts.RenderShortcuts(m.width, m.statusBindings())
 	}
 
 	return lipgloss.NewStyle().
@@ -119,8 +122,70 @@ func (m Model) optionsHeight() int {
 	}
 	h := help.New()
 	h.SetWidth(m.width)
-	return 1 + lipgloss.Height(h.FullHelpView(keys.FullHelpGroups()))
+	return 1 + lipgloss.Height(h.FullHelpView(m.fullHelpBindings()))
 }
+
+// statusBindings returns the bindings for the collapsed shortcuts bar.
+func (m Model) statusBindings() []key.Binding {
+	return append(m.paneKeyMap().ShortHelp(), m.shortGlobalBindings()...)
+}
+
+// fullHelpBindings returns the bindings for the expanded help view.
+func (m Model) fullHelpBindings() [][]key.Binding {
+	return append(m.paneKeyMap().FullHelp(), m.fullGlobalBindings())
+}
+
+// paneKeyMap returns the help.KeyMap for the currently focused pane.
+func (m Model) paneKeyMap() help.KeyMap {
+	switch m.focus {
+	case focusURLBar:
+		return urlbar.Keys
+	case focusRequestPane:
+		return requestpane.Keys
+	case focusResponsePane:
+		return responsepane.Keys
+	default:
+		return emptyKeyMap{}
+	}
+}
+
+// shortGlobalBindings returns the 2–3 global bindings always shown in the bar.
+func (m Model) shortGlobalBindings() []key.Binding {
+	return []key.Binding{
+		keys.Default.SendRequest,
+		keys.Default.Help,
+	}
+}
+
+// fullGlobalBindings returns all global bindings for the expanded help view.
+func (m Model) fullGlobalBindings() []key.Binding {
+	return []key.Binding{
+		keys.Default.SendRequest,
+		keys.Default.NewRequest,
+		keys.Default.URLFocus,
+		keys.Default.MethodCycle,
+		keys.Default.MethodPicker,
+		keys.Default.EnvCycle,
+		keys.Default.Collection,
+		keys.Default.CollectionCycle,
+		keys.Default.WorkspacePick,
+		keys.Default.NextTab,
+		keys.Default.PrevTab,
+		keys.Default.NewTab,
+		keys.Default.CloseTab,
+		keys.Default.Help,
+		key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next pane")),
+		key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev pane")),
+		key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "clear focus")),
+		key.NewBinding(key.WithKeys("q"), key.WithHelp("q", "quit")),
+	}
+}
+
+// emptyKeyMap is returned when no pane is focused (global focus or modal states).
+type emptyKeyMap struct{}
+
+func (emptyKeyMap) ShortHelp() []key.Binding  { return nil }
+func (emptyKeyMap) FullHelp() [][]key.Binding { return nil }
 
 // renderDivider renders the full-width horizontal divider below the URL bar.
 func (m Model) renderDivider() string {

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/jxdones/ferret/internal/tui/components/bodyeditor"
@@ -369,4 +370,69 @@ func TestView_HeadersTabRendersTable(t *testing.T) {
 	if ansi.StringWidth(out) < 10 {
 		t.Fatalf("View() unexpectedly short")
 	}
+}
+
+func TestKeys_ShortHelp(t *testing.T) {
+	tests := []struct {
+		name     string
+		wantKey  string
+		wantDesc string
+	}{
+		{name: "tab_navigation", wantKey: "]/[", wantDesc: "next/prev tab"},
+		{name: "navigate", wantKey: "j/k", wantDesc: "navigate"},
+		{name: "insert_edit", wantKey: "i", wantDesc: "insert / edit"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertBindingExists(t, Keys.ShortHelp(), tt.wantKey, tt.wantDesc)
+		})
+	}
+}
+
+func TestKeys_FullHelp_ContainsAllShortHelp(t *testing.T) {
+	short := Keys.ShortHelp()
+	var full []key.Binding
+	for _, g := range Keys.FullHelp() {
+		full = append(full, g...)
+	}
+	for _, b := range short {
+		h := b.Help()
+		assertBindingExists(t, full, h.Key, h.Desc)
+	}
+}
+
+func TestKeys_FullHelp_HasBodyEditorBindings(t *testing.T) {
+	tests := []struct {
+		name     string
+		wantKey  string
+		wantDesc string
+	}{
+		{name: "exit_editor", wantKey: "esc", wantDesc: "exit editor"},
+		{name: "clear_body", wantKey: "ctrl+l", wantDesc: "clear body"},
+		{name: "cycle_body_type", wantKey: "h/l", wantDesc: "cycle body type"},
+		{name: "navigate_rows", wantKey: "j/k", wantDesc: "navigate"},
+	}
+	var full []key.Binding
+	for _, g := range Keys.FullHelp() {
+		full = append(full, g...)
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertBindingExists(t, full, tt.wantKey, tt.wantDesc)
+		})
+	}
+}
+
+func assertBindingExists(t *testing.T, bindings []key.Binding, wantKey, wantDesc string) {
+	t.Helper()
+	for _, b := range bindings {
+		h := b.Help()
+		if h.Key == wantKey {
+			if h.Desc != wantDesc {
+				t.Fatalf("binding %q desc = %q, want %q", wantKey, h.Desc, wantDesc)
+			}
+			return
+		}
+	}
+	t.Fatalf("binding %q not found in bindings", wantKey)
 }

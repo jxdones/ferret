@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	chromaQuick "github.com/alecthomas/chroma/v2/quick"
@@ -24,6 +25,27 @@ const (
 	headersTabLabel = "headers"
 	cookiesTabLabel = "cookies"
 	traceTabLabel   = "trace"
+)
+
+const (
+	// traceNameCol* are the name-column widths for traceView at different terminal widths.
+	traceNameColWide    = 32
+	traceNameColDefault = 24
+	traceNameColNarrow  = 16
+
+	// traceWidth* are the terminal-width breakpoints for selecting the name column width.
+	traceWidthWide   = 80
+	traceWidthNarrow = 55
+
+	// traceBar* clamp the bar chart width. traceBarOverhead is the character budget
+	// consumed by the time text, separators, and padding on each trace row.
+	traceBarMinWidth = 6
+	traceBarMaxWidth = 20
+	traceBarOverhead = 16
+
+	// trace*ThresholdMs are the latency cutoffs for bar colour: fast/medium/slow.
+	traceSlowThresholdMs   = 600
+	traceMediumThresholdMs = 200
 )
 
 type responseTabID int
@@ -181,7 +203,8 @@ func (m Model) Update(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
 			m.offset = 0
 			return m, nil, true
 		case "G":
-			m.scrollBody(99999)
+			viewLines := m.height - 1
+			m.offset = max(0, len(m.lines)-viewLines)
 			return m, nil, true
 		}
 	case responseTabHeaders:
@@ -202,7 +225,9 @@ func (m Model) Update(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
 			m.headersOffset = 0
 			return m, nil, true
 		case "G":
-			m.scrollHeaders(99999)
+			all := m.headersContentLines()
+			viewLines := max(1, m.height)
+			m.headersOffset = max(0, len(all)-viewLines)
 			return m, nil, true
 		}
 	}
@@ -372,14 +397,14 @@ func (m Model) traceView() string {
 		fastBar.Render("  timeline"),
 	}
 
-	nameCol := 24
+	nameCol := traceNameColDefault
 	switch {
-	case m.width >= 80:
-		nameCol = 32
-	case m.width <= 55:
-		nameCol = 16
+	case m.width >= traceWidthWide:
+		nameCol = traceNameColWide
+	case m.width <= traceWidthNarrow:
+		nameCol = traceNameColNarrow
 	}
-	barMax := max(6, min(20, m.width-nameCol-16))
+	barMax := max(traceBarMinWidth, min(traceBarMaxWidth, m.width-nameCol-traceBarOverhead))
 	for i, event := range m.trace.Events {
 		eventMs := stepMs[i]
 		ratio := float64(eventMs) / float64(maxStepMs)
@@ -393,9 +418,9 @@ func (m Model) traceView() string {
 		timeText := fmt.Sprintf("%5dms", eventMs)
 		barStyle := fastBar
 		switch {
-		case eventMs >= 600:
+		case eventMs >= traceSlowThresholdMs:
 			barStyle = slowBar
-		case eventMs >= 200:
+		case eventMs >= traceMediumThresholdMs:
 			barStyle = mediumBar
 		}
 		lines = append(lines,
@@ -509,6 +534,32 @@ func (m *Model) scrollHeaders(delta int) {
 	maxOffset := max(0, total-viewLines)
 	m.headersOffset = max(0, min(m.headersOffset+delta, maxOffset))
 }
+
+// KeyMap defines the key bindings for the response pane.
+type KeyMap struct{}
+
+// ShortHelp returns the primary bindings shown in the collapsed shortcuts bar.
+func (k KeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
+		key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "scroll")),
+		key.NewBinding(key.WithKeys("ctrl+d"), key.WithHelp("ctrl+d", "half page")),
+	}
+}
+
+// FullHelp returns all bindings for the expanded help view.
+func (k KeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{
+		key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
+		key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "scroll")),
+		key.NewBinding(key.WithKeys("ctrl+d"), key.WithHelp("ctrl+d", "half page")),
+		key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "top")),
+		key.NewBinding(key.WithKeys("G"), key.WithHelp("G", "bottom")),
+	}}
+}
+
+// Keys is the default KeyMap for the response pane.
+var Keys = KeyMap{}
 
 // formatSize formats a size as a human-readable string.
 func formatSize(b int64) string {

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/bubbles/v2/key"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/jxdones/ferret/internal/tui/tuitest"
 )
@@ -118,4 +119,47 @@ func TestModel_BaseBehavior(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestKeys_ShortHelp(t *testing.T) {
+	tests := []struct {
+		name     string
+		wantKey  string
+		wantDesc string
+	}{
+		{name: "confirm", wantKey: "enter", wantDesc: "confirm"},
+		{name: "cancel", wantKey: "esc", wantDesc: "cancel"},
+		{name: "clear", wantKey: "ctrl+l", wantDesc: "clear URL"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertBindingExists(t, Keys.ShortHelp(), tt.wantKey, tt.wantDesc)
+		})
+	}
+}
+
+func TestKeys_FullHelp_ContainsAllShortHelp(t *testing.T) {
+	short := Keys.ShortHelp()
+	var full []key.Binding
+	for _, g := range Keys.FullHelp() {
+		full = append(full, g...)
+	}
+	for _, b := range short {
+		h := b.Help()
+		assertBindingExists(t, full, h.Key, h.Desc)
+	}
+}
+
+func assertBindingExists(t *testing.T, bindings []key.Binding, wantKey, wantDesc string) {
+	t.Helper()
+	for _, b := range bindings {
+		h := b.Help()
+		if h.Key == wantKey {
+			if h.Desc != wantDesc {
+				t.Fatalf("binding %q desc = %q, want %q", wantKey, h.Desc, wantDesc)
+			}
+			return
+		}
+	}
+	t.Fatalf("binding %q not found in bindings", wantKey)
 }

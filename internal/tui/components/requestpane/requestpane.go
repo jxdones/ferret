@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -452,6 +453,41 @@ func bodySyntaxFor(headers map[string]string, body string) bodyeditor.Syntax {
 	}
 	return bodyeditor.SyntaxText
 }
+
+// KeyMap defines the key bindings for the request pane.
+type KeyMap struct{}
+
+// ShortHelp returns the primary bindings shown in the collapsed shortcuts bar.
+func (k KeyMap) ShortHelp() []key.Binding {
+	return []key.Binding{
+		key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
+		key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "navigate")),
+		key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "insert / edit")),
+	}
+}
+
+// FullHelp returns all bindings for the expanded help view.
+func (k KeyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{
+			key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
+		},
+		{
+			key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "navigate")),
+			key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete row")),
+			key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "insert / edit")),
+		},
+		{
+			key.NewBinding(key.WithKeys("enter", "i"), key.WithHelp("enter/i", "edit body")),
+			key.NewBinding(key.WithKeys("h", "l"), key.WithHelp("h/l", "cycle body type")),
+			key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "exit editor")),
+			key.NewBinding(key.WithKeys("ctrl+l"), key.WithHelp("ctrl+l", "clear body")),
+		},
+	}
+}
+
+// Keys is the default KeyMap for the request pane.
+var Keys = KeyMap{}
 
 // padRight truncates or pads text to exactly n visible columns.
 func padRight(s string, n int) string {

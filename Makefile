@@ -1,5 +1,5 @@
 TARGET := ferret
-VERSION := 0.2.2
+VERSION := 0.2.3
 GO := go
 GOFMT := gofmt
 LINTER := golangci-lint
@@ -8,7 +8,7 @@ GOOS := $(shell go env GOOS)
 
 .PHONY: build test fmt lint clean release install install-prefix
 
-LDFLAGS := -ldflags "-s -w -X main.version=v$(VERSION)"
+LDFLAGS := -ldflags "-s -w -X github.com/jxdones/ferret/cmd.version=$(VERSION)"
 
 build:
 	$(GO) build $(LDFLAGS) -o bin/$(TARGET) .

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"github.com/jxdones/ferret/internal/exec"
 )
@@ -85,4 +86,67 @@ func TestCharacterization_HeadersPagingAndClamping(t *testing.T) {
 	if m.headersOffset != 0 {
 		t.Fatalf("headersOffset = %d, want 0 after g", m.headersOffset)
 	}
+}
+
+func TestKeys_ShortHelp(t *testing.T) {
+	tests := []struct {
+		name     string
+		wantKey  string
+		wantDesc string
+	}{
+		{name: "tab_navigation", wantKey: "]/[", wantDesc: "next/prev tab"},
+		{name: "scroll", wantKey: "j/k", wantDesc: "scroll"},
+		{name: "half_page", wantKey: "ctrl+d", wantDesc: "half page"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertBindingExists(t, Keys.ShortHelp(), tt.wantKey, tt.wantDesc)
+		})
+	}
+}
+
+func TestKeys_FullHelp_ContainsAllShortHelp(t *testing.T) {
+	short := Keys.ShortHelp()
+	var full []key.Binding
+	for _, g := range Keys.FullHelp() {
+		full = append(full, g...)
+	}
+	for _, b := range short {
+		h := b.Help()
+		assertBindingExists(t, full, h.Key, h.Desc)
+	}
+}
+
+func TestKeys_FullHelp_HasJumpBindings(t *testing.T) {
+	tests := []struct {
+		name     string
+		wantKey  string
+		wantDesc string
+	}{
+		{name: "jump_top", wantKey: "g", wantDesc: "top"},
+		{name: "jump_bottom", wantKey: "G", wantDesc: "bottom"},
+	}
+	var full []key.Binding
+	for _, g := range Keys.FullHelp() {
+		full = append(full, g...)
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assertBindingExists(t, full, tt.wantKey, tt.wantDesc)
+		})
+	}
+}
+
+func assertBindingExists(t *testing.T, bindings []key.Binding, wantKey, wantDesc string) {
+	t.Helper()
+	for _, b := range bindings {
+		h := b.Help()
+		if h.Key == wantKey {
+			if h.Desc != wantDesc {
+				t.Fatalf("binding %q desc = %q, want %q", wantKey, h.Desc, wantDesc)
+			}
+			return
+		}
+	}
+	t.Fatalf("binding %q not found in bindings", wantKey)
 }
