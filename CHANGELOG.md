@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`ferret run` requires `--env`/`-e`.** Omitting the flag previously produced a confusing error that leaked the collection's filesystem path. The flag is now marked required by Cobra, which surfaces a clean `required flag(s) "env" not set` error before any internal code runs.
+
 ### Security
 
 - **Tighter file permissions for saved requests.** `SaveRequest` now creates directories with `0o700` (owner-only) and writes request files with `0o600` (owner-only read/write), down from `0o755`/`0o644`. Prevents other users on the same system from reading request files that may contain auth tokens or sensitive URLs.

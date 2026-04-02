@@ -58,4 +58,5 @@ func init() {
 	runCmd.Flags().StringP("env", "e", "", "Name of environments/<name>.yaml (required; no auto-pick like the TUI)")
 	runCmd.Flags().StringP("dir", "d", ".", "Collection root directory")
 	runCmd.Flags().BoolP("raw", "r", false, "Print raw HTTP response (status line, headers, and body)")
+	cobra.MarkFlagRequired(runCmd.Flags(), "env")
 }
