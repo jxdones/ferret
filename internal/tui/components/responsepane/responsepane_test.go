@@ -95,7 +95,7 @@ func TestKeys_ShortHelp(t *testing.T) {
 		wantDesc string
 	}{
 		{name: "tab_navigation", wantKey: "]/[", wantDesc: "next/prev tab"},
-		{name: "scroll", wantKey: "j/k", wantDesc: "scroll"},
+		{name: "scroll", wantKey: "h/j/k/l", wantDesc: "scroll"},
 		{name: "half_page", wantKey: "ctrl+d", wantDesc: "half page"},
 	}
 	for _, tt := range tests {
@@ -134,6 +134,66 @@ func TestKeys_FullHelp_HasJumpBindings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assertBindingExists(t, full, tt.wantKey, tt.wantDesc)
 		})
+	}
+}
+
+func TestCharacterization_HorizontalScrollingAndClamping(t *testing.T) {
+	m := New()
+	m.SetSize(80, 10)
+	m.SetFocused(true)
+
+	longLine := strings.Repeat("x", 120)
+	m.SetResponse([]byte(longLine), map[string][]string{"Content-Type": {"text/plain"}}, exec.Trace{}, false, 0)
+
+	wantEnd := max(0, m.maxLineWidth()-m.width)
+
+	var handled bool
+
+	m, _, handled = m.Update(tea.KeyPressMsg(tea.Key{Code: 'l', Text: "l"}))
+	if !handled {
+		t.Fatal("l should be handled in body tab")
+	}
+	if m.horizontalOffset != scrollStep {
+		t.Fatalf("horizontalOffset = %d, want %d after l", m.horizontalOffset, scrollStep)
+	}
+
+	m, _, handled = m.Update(tea.KeyPressMsg(tea.Key{Code: '0', Text: "0"}))
+	if !handled {
+		t.Fatal("0 should be handled in body tab")
+	}
+	if m.horizontalOffset != 0 {
+		t.Fatalf("horizontalOffset = %d, want 0 after 0", m.horizontalOffset)
+	}
+
+	m, _, handled = m.Update(tea.KeyPressMsg(tea.Key{Code: 'h', Text: "h"}))
+	if !handled {
+		t.Fatal("h should be handled in body tab")
+	}
+	if m.horizontalOffset != 0 {
+		t.Fatalf("horizontalOffset = %d, want 0 clamp after h at zero", m.horizontalOffset)
+	}
+
+	m, _, handled = m.Update(tea.KeyPressMsg(tea.Key{Code: '$', Text: "$"}))
+	if !handled {
+		t.Fatal("$ should be handled in body tab")
+	}
+	if m.horizontalOffset != wantEnd {
+		t.Fatalf("horizontalOffset = %d, want %d after $", m.horizontalOffset, wantEnd)
+	}
+}
+
+func TestCharacterization_HorizontalOffsetResetsOnSetResponse(t *testing.T) {
+	m := New()
+	m.SetSize(80, 10)
+	m.SetFocused(true)
+
+	longLine := strings.Repeat("x", 120)
+	m.SetResponse([]byte(longLine), map[string][]string{"Content-Type": {"text/plain"}}, exec.Trace{}, false, 0)
+	m.horizontalOffset = 20
+
+	m.SetResponse([]byte("new body"), map[string][]string{"Content-Type": {"text/plain"}}, exec.Trace{}, false, 0)
+	if m.horizontalOffset != 0 {
+		t.Fatalf("horizontalOffset = %d, want 0 after SetResponse", m.horizontalOffset)
 	}
 }
 

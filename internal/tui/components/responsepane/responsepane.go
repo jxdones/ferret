@@ -48,6 +48,11 @@ const (
 	traceMediumThresholdMs = 200
 )
 
+const (
+	// scrollStep is the number of characters to scroll by when using the arrow keys.
+	scrollStep = 5
+)
+
 type responseTabID int
 
 const (
@@ -96,14 +101,15 @@ func responseTabFromLabel(label string) responseTabID {
 
 // Model is the response viewer pane.
 type Model struct {
-	tabs           tabs.Model
-	body           []byte
-	headers        map[string][]string
-	trace          exec.Trace
-	responseTooBig bool
-	responseSize   int64
-	lines          []string
-	offset         int // body tab vertical scroll
+	tabs             tabs.Model
+	body             []byte
+	headers          map[string][]string
+	trace            exec.Trace
+	responseTooBig   bool
+	responseSize     int64
+	lines            []string
+	offset           int // body tab vertical scroll
+	horizontalOffset int // body tab horizontal scroll
 
 	headersOffset int // headers tab vertical scroll
 	width         int
@@ -144,6 +150,7 @@ func (m *Model) SetResponse(body []byte, headers map[string][]string, trace exec
 	m.headersOffset = 0
 	m.responseTooBig = responseTooBig
 	m.responseSize = responseSize
+	m.horizontalOffset = 0
 	m.rebuildBodyCache()
 }
 
@@ -158,6 +165,7 @@ func (m *Model) Reset() {
 	m.headersOffset = 0
 	m.responseTooBig = false
 	m.responseSize = 0
+	m.horizontalOffset = 0
 }
 
 // TabsView returns the rendered tab strip line.
@@ -195,6 +203,18 @@ func (m Model) Update(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
 			return m, nil, true
 		case "k", "up":
 			m.scrollBody(-1)
+			return m, nil, true
+		case "right", "l":
+			m.scrollBodyHorizontal(scrollStep)
+			return m, nil, true
+		case "left", "h":
+			m.scrollBodyHorizontal(-scrollStep)
+			return m, nil, true
+		case "$":
+			m.scrollBodyHorizontal(m.maxLineWidth() - m.width)
+			return m, nil, true
+		case "0":
+			m.horizontalOffset = 0
 			return m, nil, true
 		case "ctrl+d":
 			m.scrollBody(m.height / 2)
@@ -295,7 +315,7 @@ func (m Model) bodyView() string {
 	for i, line := range all[start:end] {
 		lineNum := start + i + 1
 		gutter := numStyle.Render(fmt.Sprintf(" %*d ", numDigits, lineNum))
-		content := ansi.Truncate(line, contentWidth, "")
+		content := ansi.Cut(line, m.horizontalOffset, m.horizontalOffset+contentWidth)
 		cw := ansi.StringWidth(content)
 		if cw < contentWidth {
 			content += strings.Repeat(" ", contentWidth-cw)
@@ -523,6 +543,11 @@ func (m *Model) scrollBody(delta int) {
 	m.offset = max(0, min(m.offset+delta, maxOffset))
 }
 
+// scrollBodyHorizontal adjusts the body tab horizontal scroll offset by the given delta.
+func (m *Model) scrollBodyHorizontal(delta int) {
+	m.horizontalOffset = max(0, m.horizontalOffset+delta)
+}
+
 // scrollHeaders adjusts the headers tab scroll offset by the given delta.
 func (m *Model) scrollHeaders(delta int) {
 	all := m.headersContentLines()
@@ -535,6 +560,18 @@ func (m *Model) scrollHeaders(delta int) {
 	m.headersOffset = max(0, min(m.headersOffset+delta, maxOffset))
 }
 
+// maxLineWidth returns the maximum width of all lines in the body tab.
+func (m *Model) maxLineWidth() int {
+	max := 0
+	for _, line := range m.lines {
+		w := ansi.StringWidth(line)
+		if w > max {
+			max = w
+		}
+	}
+	return max
+}
+
 // KeyMap defines the key bindings for the response pane.
 type KeyMap struct{}
 
@@ -542,7 +579,7 @@ type KeyMap struct{}
 func (k KeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
-		key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "scroll")),
+		key.NewBinding(key.WithKeys("h", "j", "k", "l"), key.WithHelp("h/j/k/l", "scroll")),
 		key.NewBinding(key.WithKeys("ctrl+d"), key.WithHelp("ctrl+d", "half page")),
 	}
 }
@@ -551,7 +588,9 @@ func (k KeyMap) ShortHelp() []key.Binding {
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{{
 		key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
-		key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "scroll")),
+		key.NewBinding(key.WithKeys("h", "j", "k", "l"), key.WithHelp("h/j/k/l", "scroll")),
+		key.NewBinding(key.WithKeys("0"), key.WithHelp("0", "beginning of line")),
+		key.NewBinding(key.WithKeys("$"), key.WithHelp("$", "end of line")),
 		key.NewBinding(key.WithKeys("ctrl+d"), key.WithHelp("ctrl+d", "half page")),
 		key.NewBinding(key.WithKeys("g"), key.WithHelp("g", "top")),
 		key.NewBinding(key.WithKeys("G"), key.WithHelp("G", "bottom")),

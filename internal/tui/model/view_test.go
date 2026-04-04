@@ -34,7 +34,7 @@ func TestStatusBindings(t *testing.T) {
 		{
 			name:        "response_pane_includes_scroll",
 			focus:       focusResponsePane,
-			wantKey:     "j/k",
+			wantKey:     "h/j/k/l",
 			wantPresent: true,
 		},
 		{
