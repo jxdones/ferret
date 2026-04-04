@@ -83,6 +83,7 @@ func (m *Model) SetSize(width int) {
 
 // Reset clears the search input and resets the cursor. Call when opening the modal.
 func (m *Model) Reset() {
+	m.all = nil
 	m.input.SetValue("")
 	m.cursor = 0
 	m.refilter()

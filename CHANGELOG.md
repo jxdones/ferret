@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Collection modal shows stale entries on collection-agnostic tabs.** Pressing `/` on a tab with no collection loaded previously displayed entries from another tab's collection. The `collection.Model` is shared across tabs, and `Reset()` cleared the search input but left `all` intact. The fix clears the entry list before attempting to load for the active tab, so tabs with no collection root always open an empty modal.
+
 ## [0.2.3] - 2026-04-02
 
 ### Changed
