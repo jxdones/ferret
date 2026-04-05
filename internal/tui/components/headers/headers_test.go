@@ -236,7 +236,6 @@ func TestUpdate_IgnoresInsertKeysWhenNotInserting(t *testing.T) {
 	}
 }
 
-
 func TestReadOnlyView_Layout(t *testing.T) {
 	tuitest.UseStableTheme(t)
 	out := tuitest.StripANSI(ReadOnlyView(50, []Row{

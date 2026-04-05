@@ -94,36 +94,40 @@ func WriteConfig(cfg Config) error {
 	return os.WriteFile(path, append([]byte(header), data...), 0o600)
 }
 
-// LoadConfig loads the config from the config file.
-// If the file does not exist, it is created with default values and those are returned.
-func LoadConfig() (Config, error) {
-	err := EnsureConfigDir()
-	if err != nil {
-		return Config{}, err
+// EnsureConfigExists creates the config directory and file with default values
+// if either does not exist. Safe to call on every startup.
+func EnsureConfigExists() error {
+	if err := EnsureConfigDir(); err != nil {
+		return err
 	}
+	path, err := ConfigPath()
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return WriteConfig(DefaultConfig())
+	} else if err != nil {
+		return err
+	}
+	return nil
+}
 
+// LoadConfig reads the config file and returns its contents.
+// If the file does not exist, returns DefaultConfig() with no error and does not write.
+func LoadConfig() (Config, error) {
 	path, err := ConfigPath()
 	if err != nil {
 		return Config{}, err
 	}
-	cfg := Config{}
-	_, err = os.Stat(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			cfg = DefaultConfig()
-			if writeErr := WriteConfig(cfg); writeErr != nil {
-				return Config{}, writeErr
-			}
-			return cfg, nil
+			return DefaultConfig(), nil
 		}
 		return Config{}, err
 	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return Config{}, err
-	}
-	err = yaml.Unmarshal(data, &cfg)
-	if err != nil {
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
@@ -131,7 +135,7 @@ func LoadConfig() (Config, error) {
 
 // ExpandPath resolves path for use on the local filesystem. A leading "~" or
 // "~/" is replaced with the user's home directory; otherwise filepath.Clean is
-// applied. Empty path returns ("", nil).
+// applied.
 func ExpandPath(path string) (string, error) {
 	path = strings.TrimSpace(path)
 	if path == "" {

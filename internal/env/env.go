@@ -80,7 +80,6 @@ func ResolveStartEnv(dir, name string) (*Env, string, error) {
 	if len(names) == 0 {
 		return NewFromShell(), "", nil
 	}
-	sort.Strings(names)
 	e, err := Load(dir, names[0])
 	if err != nil {
 		return nil, "", err
@@ -218,10 +217,8 @@ func ResolveStartEnvFromAll(dirs []string, name string) (*Env, string, error) {
 	return e, names[0], nil
 }
 
-// ListNames returns the stem of each *.yaml under environments/ (recursive).
-// Order follows filepath.WalkDir (not sorted). Callers that need a stable pick
-// (e.g. ResolveStartEnv) must sort the slice.
-// If environments/ is missing, returns (nil, nil).
+// ListNames returns the stem of each *.yaml under environments/ (recursive),
+// sorted alphabetically.
 func ListNames(dir string) ([]string, error) {
 	envDir := filepath.Join(dir, "environments")
 	var names []string
@@ -246,5 +243,6 @@ func ListNames(dir string) ([]string, error) {
 		}
 		return nil, fmt.Errorf("env: list in %s: %w", envDir, err)
 	}
+	sort.Strings(names)
 	return names, nil
 }

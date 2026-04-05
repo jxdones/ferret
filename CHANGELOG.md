@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`LoadConfig` no longer writes on read.** `LoadConfig` now returns `DefaultConfig()` when the config file is missing instead of creating it on disk. A new `EnsureConfigExists` function owns the creation logic and is called explicitly at startup. This makes `LoadConfig` safe to call in any context without unexpected filesystem side effects.
+
+- **`ListNames` now returns a sorted slice.** `env.ListNames` previously documented undefined ordering and required every caller to sort. The function now sorts internally and callers no longer need to.
+
 - **Unified `TruncatePad` utility.** Five independent "truncate-or-pad to N columns" implementations (`urlbar.fit`, `headers.padRight`, `requestpane.padRight`, `view.fitStyled`, `view.fitToWidth`) have been replaced with a single `common.TruncatePad`.
 
 - **Unified `DetectSyntax` utility.** `requestpane` and `responsepane` each had ~40 lines of duplicated content-type heuristics. Both now delegate to a single `common.DetectSyntax(contentType, body string) string` that checks the Content-Type header first, then falls back to body sniffing. As a side effect, the request pane now also recognises XML and HTML bodies when no Content-Type header is set.

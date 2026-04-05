@@ -20,6 +20,9 @@ var RootCmd = &cobra.Command{
 
 		envName, _ := cmd.Flags().GetString("env")
 		dir, _ := cmd.Flags().GetString("dir")
+		if err := config.EnsureConfigExists(); err != nil {
+			return err
+		}
 		cfg, err := config.LoadConfig()
 		if err != nil {
 			return err

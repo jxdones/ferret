@@ -385,7 +385,6 @@ func overlayAtCenter(base, overlay string, width, height int) string {
 	return strings.Join(baseLines, "\n")
 }
 
-
 // paneDivider renders a divider line with an optional highlighted active span.
 func paneDivider(width, activeStart, activeWidth int, dim, active lipgloss.Style) string {
 	if width <= 0 {

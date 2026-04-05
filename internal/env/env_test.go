@@ -3,7 +3,6 @@ package env
 import (
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 )
 
@@ -195,7 +194,6 @@ func TestListNames_MissingDirReturnsNil(t *testing.T) {
 				return
 			}
 
-			sort.Strings(names)
 			if len(names) != len(tt.want) {
 				t.Fatalf("expected %v, got %v", tt.want, names)
 			}

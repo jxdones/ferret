@@ -466,7 +466,6 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 // Keys is the default KeyMap for the request pane.
 var Keys = KeyMap{}
 
-
 // requestTabLabels returns the labels for the request tabs.
 func requestTabLabels() []string {
 	return []string{

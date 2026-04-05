@@ -9,7 +9,6 @@ import (
 	"github.com/jxdones/ferret/internal/tui/tuitest"
 )
 
-
 func TestModel_BaseBehavior(t *testing.T) {
 	tuitest.UseStableTheme(t)
 

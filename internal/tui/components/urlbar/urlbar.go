@@ -139,4 +139,3 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 
 // Keys is the default KeyMap for the URL bar.
 var Keys = KeyMap{}
-

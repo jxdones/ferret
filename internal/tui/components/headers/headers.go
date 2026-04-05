@@ -361,7 +361,6 @@ func (m *Model) applyInputFocus() {
 	}
 }
 
-
 // missingComputedHeaders returns default computed headers not overridden by user rows.
 func (m Model) missingComputedHeaders() []computedHeader {
 	if len(defaultComputedHeaders) == 0 {
