@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mattn/go-runewidth"
+
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	collectiondata "github.com/jxdones/ferret/internal/collection"
@@ -208,11 +210,15 @@ func nextMethod(method string) string {
 }
 
 // titleFromMethodAndURL builds a tab title from the method and URL.
+// The scheme prefix (https:// or http://) is stripped before clamping so that
+// the visible columns are used for the meaningful part of the URL.
 func titleFromMethodAndURL(method, rawURL string) string {
 	if rawURL == "" {
 		return "new request"
 	}
-	return method + " " + clampTabTitle(rawURL)
+	stripped := strings.TrimPrefix(rawURL, "https://")
+	stripped = strings.TrimPrefix(stripped, "http://")
+	return method + " " + clampTabTitle(stripped)
 }
 
 // refreshTitle rebuilds the tab title from the current method and either the
@@ -244,10 +250,23 @@ func detectFormatFromHeaders(headers map[string][]string) string {
 	return ""
 }
 
-// clampTabTitle truncates a title to 10 characters and adds an ellipsis if it is longer.
+// clampTabTitle truncates title to at most 10 display columns and appends an
+// ellipsis when truncation occurs. Display width is measured with go-runewidth
+// so that multibyte characters (emoji, CJK, accented) are handled correctly.
 func clampTabTitle(title string) string {
-	if len(title) > 10 {
-		return title[:10] + "…"
+	const maxCols = 10
+	if runewidth.StringWidth(title) <= maxCols {
+		return title
 	}
-	return title
+	var out []rune
+	cols := 0
+	for _, r := range title {
+		rw := runewidth.RuneWidth(r)
+		if cols+rw > maxCols {
+			break
+		}
+		out = append(out, r)
+		cols += rw
+	}
+	return string(out) + "…"
 }
