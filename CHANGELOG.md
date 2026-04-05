@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Horizontal scroll in the response body tab.** The body pane now supports horizontal scrolling via `h`/`l` (or left/right arrows). `0` jumps to the beginning of the line and `$` jumps to the end of the longest line. The horizontal offset resets automatically when a new response arrives.
 
+### Changed
+
+- **Unified `FormatSize` utility.** `statusbar` and `responsepane` each had their own `formatSize` — the statusbar version was missing the MB branch (a 10 MB response would render as `10485.8KB`). Both have been replaced with a single `common.FormatSize` that correctly handles B / KB / MB.
+
 ### Fixed
 
 - **Collection modal shows stale entries on collection-agnostic tabs.** Pressing `/` on a tab with no collection loaded previously displayed entries from another tab's collection. The `collection.Model` is shared across tabs, and `Reset()` cleared the search input but left `all` intact. The fix clears the entry list before attempting to load for the active tab, so tabs with no collection root always open an empty modal.

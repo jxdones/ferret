@@ -36,34 +36,6 @@ func TestFormatDuration(t *testing.T) {
 	}
 }
 
-func TestFormatSize(t *testing.T) {
-	tests := []struct {
-		name string
-		in   int64
-		want string
-	}{
-		{
-			name: "sub_kb_uses_bytes",
-			in:   12,
-			want: "12B",
-		},
-		{
-			name: "one_kb_or_more_uses_kb_with_one_decimal",
-			in:   2048,
-			want: "2.0KB",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := formatSize(tt.in)
-			if got != tt.want {
-				t.Fatalf("formatSize(%d) = %q, want %q", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
 func TestModel_RenderRight(t *testing.T) {
 	tuitest.UseStableTheme(t)
 

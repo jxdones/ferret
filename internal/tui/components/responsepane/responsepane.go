@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jxdones/ferret/internal/exec"
+	"github.com/jxdones/ferret/internal/tui/common"
 	"github.com/jxdones/ferret/internal/tui/components/headers"
 	"github.com/jxdones/ferret/internal/tui/components/tabs"
 	"github.com/jxdones/ferret/internal/tui/theme"
@@ -278,7 +279,7 @@ func (m Model) activeTab() responseTabID {
 func (m Model) bodyView() string {
 	if m.responseTooBig {
 		muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-		return muted.Render(" response is %s - too large to display", formatSize(m.responseSize))
+		return muted.Render(" response is %s - too large to display", common.FormatSize(m.responseSize))
 	}
 	if len(m.lines) == 0 {
 		return lipgloss.NewStyle().Foreground(theme.Current.TextMuted).
@@ -599,12 +600,3 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 
 // Keys is the default KeyMap for the response pane.
 var Keys = KeyMap{}
-
-// formatSize formats a size as a human-readable string.
-func formatSize(b int64) string {
-	const mb = 1024 * 1024
-	if b >= mb {
-		return fmt.Sprintf("%.1fMB", float64(b)/float64(mb))
-	}
-	return fmt.Sprintf("%.1fKB", float64(b)/1024)
-}

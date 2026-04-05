@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/jxdones/ferret/internal/tui/common"
 	"github.com/jxdones/ferret/internal/tui/theme"
 )
 
@@ -228,7 +229,7 @@ func (m Model) renderRight() string {
 	muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
 	meta := []string{
 		formatDuration(m.response.Duration),
-		formatSize(m.response.Size),
+		common.FormatSize(m.response.Size),
 	}
 	if m.response.Format != "" {
 		meta = append(meta, m.response.Format)
@@ -243,12 +244,4 @@ func formatDuration(d time.Duration) string {
 		return fmt.Sprintf("%dms", d.Milliseconds())
 	}
 	return fmt.Sprintf("%.1fs", d.Seconds())
-}
-
-// formatSize formats a size as a human-readable string.
-func formatSize(b int64) string {
-	if b < 1024 {
-		return fmt.Sprintf("%dB", b)
-	}
-	return fmt.Sprintf("%.1fKB", float64(b)/1024)
 }

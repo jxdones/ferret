@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
@@ -41,4 +42,20 @@ func ClampMin(value, min int) int {
 		return min
 	}
 	return value
+}
+
+// FormatSize formats a byte count as a human-readable string.
+// It selects the largest unit (B, KB, MB) that keeps the value >= 1,
+// and formats KB/MB with one decimal place.
+func FormatSize(b int64) string {
+	const kb = 1024
+	const mb = 1024 * 1024
+	switch {
+	case b >= mb:
+		return fmt.Sprintf("%.1fMB", float64(b)/float64(mb))
+	case b >= kb:
+		return fmt.Sprintf("%.1fKB", float64(b)/float64(kb))
+	default:
+		return fmt.Sprintf("%dB", b)
+	}
 }
