@@ -1,13 +1,12 @@
 package urlbar
 
 import (
-	"strings"
-
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/jxdones/ferret/internal/tui/common"
 	"github.com/jxdones/ferret/internal/tui/theme"
 )
 
@@ -98,15 +97,15 @@ func (m Model) View() tea.View {
 	var url string
 	if m.focused {
 		// textinput.View includes cursor and styling; keep it within the URL field.
-		url = fit(m.input.View(), available)
+		url = common.TruncatePad(m.input.View(), available)
 	} else {
 		url = lipgloss.NewStyle().Foreground(theme.Current.TextPrimary).
 			Render(ansi.Truncate(m.input.Value(), available, "…"))
-		url = fit(url, available)
+		url = common.TruncatePad(url, available)
 	}
 
 	line := prefix + url
-	return tea.NewView(fit(line, m.width))
+	return tea.NewView(common.TruncatePad(line, m.width))
 }
 
 // applyInputWidth sets the input width from available space and method width.
@@ -141,11 +140,3 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 // Keys is the default KeyMap for the URL bar.
 var Keys = KeyMap{}
 
-// fit ensures a string fits within a given width, truncating if necessary.
-func fit(s string, width int) string {
-	output := ansi.Truncate(s, width, "")
-	if w := ansi.StringWidth(output); w < width {
-		output += strings.Repeat(" ", width-w)
-	}
-	return output
-}

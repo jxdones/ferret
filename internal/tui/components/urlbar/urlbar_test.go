@@ -9,45 +9,6 @@ import (
 	"github.com/jxdones/ferret/internal/tui/tuitest"
 )
 
-func TestFit(t *testing.T) {
-	tests := []struct {
-		name  string
-		in    string
-		width int
-		want  string
-	}{
-		{
-			name:  "pads_to_width",
-			in:    "abc",
-			width: 5,
-			want:  "abc  ",
-		},
-		{
-			name:  "truncates_to_width",
-			in:    "abcdef",
-			width: 3,
-			want:  "abc",
-		},
-		{
-			name:  "zero_width_empty",
-			in:    "abcdef",
-			width: 0,
-			want:  "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := fit(tt.in, tt.width)
-			if got != tt.want {
-				t.Fatalf("fit(%q, %d) = %q, want %q", tt.in, tt.width, got, tt.want)
-			}
-			if w := ansi.StringWidth(got); w != tt.width {
-				t.Fatalf("fit(%q, %d) width = %d, want %d", tt.in, tt.width, w, tt.width)
-			}
-		})
-	}
-}
 
 func TestModel_BaseBehavior(t *testing.T) {
 	tuitest.UseStableTheme(t)

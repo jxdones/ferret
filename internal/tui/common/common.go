@@ -7,6 +7,18 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+// TruncatePad truncates or pads s to exactly width visible columns.
+func TruncatePad(s string, width int) string {
+	if width <= 0 {
+		return ""
+	}
+	out := ansi.Truncate(s, width, "")
+	if w := ansi.StringWidth(out); w < width {
+		out += strings.Repeat(" ", width-w)
+	}
+	return out
+}
+
 // NormalizeCanvas clips/pads content to an exact width x height rectangle.
 // This prevents section-overflow artifacts when terminal space is tight.
 func NormalizeCanvas(content string, width, height int) string {
@@ -24,12 +36,7 @@ func NormalizeCanvas(content string, width, height int) string {
 	}
 
 	for i := range lines {
-		line := ansi.Truncate(lines[i], width, "")
-		lineWidth := ansi.StringWidth(line)
-		if lineWidth < width {
-			line += strings.Repeat(" ", width-lineWidth)
-		}
-		lines[i] = line
+		lines[i] = TruncatePad(lines[i], width)
 	}
 
 	return strings.Join(lines, "\n")

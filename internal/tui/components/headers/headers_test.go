@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/jxdones/ferret/internal/tui/tuitest"
 )
 
@@ -237,39 +236,6 @@ func TestUpdate_IgnoresInsertKeysWhenNotInserting(t *testing.T) {
 	}
 }
 
-func TestPadRight(t *testing.T) {
-	tests := []struct {
-		name string
-		s    string
-		n    int
-		want string
-	}{
-		{
-			name: "pads_spaces",
-			s:    "ab",
-			n:    5,
-			want: "ab   ",
-		},
-		{
-			name: "truncates",
-			s:    "abcdef",
-			n:    3,
-			want: "abc",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := padRight(tt.s, tt.n)
-			if got != tt.want {
-				t.Fatalf("padRight(%q, %d) = %q, want %q", tt.s, tt.n, got, tt.want)
-			}
-			if w := ansi.StringWidth(got); w != tt.n {
-				t.Fatalf("visible width = %d, want %d", w, tt.n)
-			}
-		})
-	}
-}
 
 func TestReadOnlyView_Layout(t *testing.T) {
 	tuitest.UseStableTheme(t)

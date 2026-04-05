@@ -326,15 +326,7 @@ func splitAndFit(content string, width int) []string {
 func fitToWidth(lines []string, width int) []string {
 	result := make([]string, len(lines))
 	for i, line := range lines {
-		w := ansi.StringWidth(line)
-		switch {
-		case w < width:
-			result[i] = line + strings.Repeat(" ", width-w)
-		case w > width:
-			result[i] = ansi.Truncate(line, width, "")
-		default:
-			result[i] = line
-		}
+		result[i] = common.TruncatePad(line, width)
 	}
 	return result
 }
@@ -348,7 +340,7 @@ func overlayAtCenter(base, overlay string, width, height int) string {
 	canvas := lipgloss.Place(width, height, lipgloss.Left, lipgloss.Top, base)
 	baseLines := strings.Split(canvas, "\n")
 	for i := range baseLines {
-		baseLines[i] = fitStyled(ansi.Strip(baseLines[i]), width)
+		baseLines[i] = common.TruncatePad(ansi.Strip(baseLines[i]), width)
 	}
 
 	overlayLines := strings.Split(overlay, "\n")
@@ -379,7 +371,7 @@ func overlayAtCenter(base, overlay string, width, height int) string {
 		suffixStart := min(x+overlayWidth, len(dst))
 		prefix := string(dst[:prefixEnd])
 		suffix := string(dst[suffixStart:])
-		baseLines[row] = dimStyle.Render(prefix) + fitStyled(line, overlayWidth) + dimStyle.Render(suffix)
+		baseLines[row] = dimStyle.Render(prefix) + common.TruncatePad(line, overlayWidth) + dimStyle.Render(suffix)
 		overlayRows[row] = struct{}{}
 	}
 
@@ -387,20 +379,12 @@ func overlayAtCenter(base, overlay string, width, height int) string {
 		if _, ok := overlayRows[i]; !ok {
 			baseLines[i] = dimStyle.Render(baseLines[i])
 		}
-		baseLines[i] = fitStyled(baseLines[i], width)
+		baseLines[i] = common.TruncatePad(baseLines[i], width)
 	}
 
 	return strings.Join(baseLines, "\n")
 }
 
-// fitStyled truncates or pads s to exactly width visible columns, preserving ANSI styles.
-func fitStyled(s string, width int) string {
-	out := ansi.Truncate(s, width, "")
-	if w := ansi.StringWidth(out); w < width {
-		out += strings.Repeat(" ", width-w)
-	}
-	return out
-}
 
 // paneDivider renders a divider line with an optional highlighted active span.
 func paneDivider(width, activeStart, activeWidth int, dim, active lipgloss.Style) string {

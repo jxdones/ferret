@@ -365,17 +365,17 @@ func (m Model) paramsView() string {
 	divider := dim.Render(strings.Repeat("─", m.width))
 
 	lines := []string{
-		muted.Render(padRight("  Key", keyW)) +
-			muted.Render(padRight("Value", valW)) +
-			muted.Render(padRight("Description", descW)),
+		muted.Render(common.TruncatePad("  Key", keyW)) +
+			muted.Render(common.TruncatePad("Value", valW)) +
+			muted.Render(common.TruncatePad("Description", descW)),
 		divider,
 	}
 
 	for _, p := range params {
 		lines = append(lines,
-			muted.Render(padRight("  "+ansi.Truncate(p.key, max(1, keyW-2), "…"), keyW))+
-				primary.Render(padRight(ansi.Truncate(p.value, valW, "…"), valW))+
-				dim.Render(padRight("", descW)),
+			muted.Render(common.TruncatePad("  "+ansi.Truncate(p.key, max(1, keyW-2), "…"), keyW))+
+				primary.Render(common.TruncatePad(ansi.Truncate(p.value, valW, "…"), valW))+
+				dim.Render(common.TruncatePad("", descW)),
 		)
 	}
 	return strings.Join(lines, "\n")
@@ -466,17 +466,6 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 // Keys is the default KeyMap for the request pane.
 var Keys = KeyMap{}
 
-// padRight truncates or pads text to exactly n visible columns.
-func padRight(s string, n int) string {
-	if n <= 0 {
-		return ""
-	}
-	out := ansi.Truncate(s, n, "")
-	if w := ansi.StringWidth(out); w < n {
-		out += strings.Repeat(" ", n-w)
-	}
-	return out
-}
 
 // requestTabLabels returns the labels for the request tabs.
 func requestTabLabels() []string {

@@ -53,6 +53,61 @@ func TestClampMin(t *testing.T) {
 	}
 }
 
+func TestTruncatePad(t *testing.T) {
+	tests := []struct {
+		name  string
+		in    string
+		width int
+		want  string
+	}{
+		{
+			name:  "pads_short_string",
+			in:    "abc",
+			width: 5,
+			want:  "abc  ",
+		},
+		{
+			name:  "truncates_long_string",
+			in:    "abcdef",
+			width: 3,
+			want:  "abc",
+		},
+		{
+			name:  "exact_width_unchanged",
+			in:    "abc",
+			width: 3,
+			want:  "abc",
+		},
+		{
+			name:  "zero_width_returns_empty",
+			in:    "abcdef",
+			width: 0,
+			want:  "",
+		},
+		{
+			name:  "negative_width_returns_empty",
+			in:    "abc",
+			width: -1,
+			want:  "",
+		},
+		{
+			name:  "empty_string_pads_to_width",
+			in:    "",
+			width: 3,
+			want:  "   ",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := TruncatePad(tt.in, tt.width)
+			if got != tt.want {
+				t.Fatalf("TruncatePad(%q, %d) = %q, want %q", tt.in, tt.width, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDetectSyntax(t *testing.T) {
 	tests := []struct {
 		name        string

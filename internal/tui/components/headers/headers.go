@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/jxdones/ferret/internal/tui/common"
 	"github.com/jxdones/ferret/internal/tui/theme"
 )
 
@@ -166,14 +167,14 @@ func ReadOnlyView(width int, rows []Row) tea.View {
 	divider := dim.Render(strings.Repeat("─", width))
 
 	var lines []string
-	nameHeader := accent.Render(padRight("  Name", nameW))
-	valHeader := accent.Render(padRight("Value", valW))
+	nameHeader := accent.Render(common.TruncatePad("  Name", nameW))
+	valHeader := accent.Render(common.TruncatePad("Value", valW))
 	lines = append(lines, nameHeader+valHeader)
 	lines = append(lines, divider)
 
 	for _, h := range rows {
-		name := bodyName.Render(padRight(ansi.Truncate("  "+h.Name, nameW, "…"), nameW))
-		val := bodyValue.Render(padRight(ansi.Truncate(h.Value, valW, "…"), valW))
+		name := bodyName.Render(common.TruncatePad(ansi.Truncate("  "+h.Name, nameW, "…"), nameW))
+		val := bodyValue.Render(common.TruncatePad(ansi.Truncate(h.Value, valW, "…"), valW))
 		lines = append(lines, name+val)
 		lines = append(lines, divider)
 	}
@@ -196,8 +197,8 @@ func (m Model) View() tea.View {
 	var lines []string
 
 	// Title row: same name/value column widths as data rows; muted + dim only.
-	nameHdr := accent.Render(padRight("  Name", nameColumnWidth))
-	valHdr := accent.Render(padRight("Value", valueColumnWidth))
+	nameHdr := accent.Render(common.TruncatePad("  Name", nameColumnWidth))
+	valHdr := accent.Render(common.TruncatePad("Value", valueColumnWidth))
 	lines = append(lines, nameHdr+valHdr)
 	lines = append(lines, divider)
 
@@ -206,11 +207,11 @@ func (m Model) View() tea.View {
 	computed := m.missingComputedHeaders()
 	if len(computed) > 0 {
 		hasBody = true
-		lines = append(lines, muted.Render(padRight("  computed at send time", m.width)))
+		lines = append(lines, muted.Render(common.TruncatePad("  computed at send time", m.width)))
 		lines = append(lines, divider)
 		for _, h := range computed {
-			name := muted.Render(padRight(ansi.Truncate("  "+h.name, nameColumnWidth, "…"), nameColumnWidth))
-			val := muted.Render(padRight(ansi.Truncate(h.value, valueColumnWidth, "…"), valueColumnWidth))
+			name := muted.Render(common.TruncatePad(ansi.Truncate("  "+h.name, nameColumnWidth, "…"), nameColumnWidth))
+			val := muted.Render(common.TruncatePad(ansi.Truncate(h.value, valueColumnWidth, "…"), valueColumnWidth))
 			lines = append(lines, name+val)
 			lines = append(lines, divider)
 		}
@@ -226,8 +227,8 @@ func (m Model) View() tea.View {
 				valStyle = valStyle.Bold(true)
 			}
 		}
-		name := nameStyle.Render(padRight(ansi.Truncate("  "+h.name, nameColumnWidth, "…"), nameColumnWidth))
-		val := valStyle.Render(padRight(ansi.Truncate(h.value, valueColumnWidth, "…"), valueColumnWidth))
+		name := nameStyle.Render(common.TruncatePad(ansi.Truncate("  "+h.name, nameColumnWidth, "…"), nameColumnWidth))
+		val := valStyle.Render(common.TruncatePad(ansi.Truncate(h.value, valueColumnWidth, "…"), valueColumnWidth))
 		lines = append(lines, name+val)
 		lines = append(lines, divider)
 	}
@@ -243,7 +244,7 @@ func (m Model) View() tea.View {
 		if !hasBody {
 			lines = append(lines, divider)
 		}
-		lines = append(lines, padRight(hint, m.width))
+		lines = append(lines, common.TruncatePad(hint, m.width))
 	}
 
 	return tea.NewView(strings.Join(lines, "\n"))
@@ -360,14 +361,6 @@ func (m *Model) applyInputFocus() {
 	}
 }
 
-// padRight pads or truncates s to exactly n visible characters.
-func padRight(s string, n int) string {
-	out := ansi.Truncate(s, n, "")
-	if w := ansi.StringWidth(out); w < n {
-		out += strings.Repeat(" ", n-w)
-	}
-	return out
-}
 
 // missingComputedHeaders returns default computed headers not overridden by user rows.
 func (m Model) missingComputedHeaders() []computedHeader {
