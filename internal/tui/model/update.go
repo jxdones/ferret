@@ -92,9 +92,9 @@ func (m Model) handleModalKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 // handleGlobalKeyPress handles global key presses.
 func (m Model) handleGlobalKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	switch {
-	case msg.String() == "ctrl+c", msg.String() == "q":
+	case key.Matches(msg, keys.Default.Quit):
 		return m, tea.Quit
-	case msg.String() == "esc":
+	case key.Matches(msg, keys.Default.Escape):
 		m.helpExpanded = false
 		m.focus = focusGlobal
 		m.syncChildStateWithLayout()

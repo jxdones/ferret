@@ -44,6 +44,47 @@ func ClampMin(value, min int) int {
 	return value
 }
 
+// DetectSyntax infers a syntax name from a Content-Type header value and body content.
+// It checks the Content-Type value first, then falls back to body sniffing.
+// Returns a canonical name: "json", "yaml", "xml", "html", "graphql", or "text".
+func DetectSyntax(contentType, body string) string {
+	ct := strings.ToLower(contentType)
+	switch {
+	case strings.Contains(ct, "json"):
+		return "json"
+	case strings.Contains(ct, "yaml"):
+		return "yaml"
+	case strings.Contains(ct, "xml"):
+		return "xml"
+	case strings.Contains(ct, "html"):
+		return "html"
+	case strings.Contains(ct, "graphql"):
+		return "graphql"
+	}
+
+	trimmed := strings.TrimSpace(body)
+	if trimmed == "" {
+		return "text"
+	}
+	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+		return "json"
+	}
+	if strings.HasPrefix(trimmed, "<") {
+		return "xml"
+	}
+	if strings.HasPrefix(trimmed, "---") || strings.Contains(trimmed, ": ") {
+		return "yaml"
+	}
+	first := strings.Fields(trimmed)
+	if len(first) > 0 {
+		switch first[0] {
+		case "query", "mutation", "subscription", "fragment":
+			return "graphql"
+		}
+	}
+	return "text"
+}
+
 // FormatSize formats a byte count as a human-readable string.
 // It selects the largest unit (B, KB, MB) that keeps the value >= 1,
 // and formats KB/MB with one decimal place.

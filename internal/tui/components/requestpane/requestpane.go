@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/jxdones/ferret/internal/tui/common"
 	"github.com/jxdones/ferret/internal/tui/components/bodyeditor"
 	"github.com/jxdones/ferret/internal/tui/components/headers"
 	"github.com/jxdones/ferret/internal/tui/components/tabs"
@@ -420,38 +421,14 @@ func parseQueryParams(rawURL string) []queryParam {
 }
 
 func bodySyntaxFor(headers map[string]string, body string) bodyeditor.Syntax {
+	var ct string
 	for name, value := range headers {
-		if !strings.EqualFold(name, "Content-Type") {
-			continue
-		}
-		switch {
-		case strings.Contains(strings.ToLower(value), "json"):
-			return bodyeditor.SyntaxJSON
-		case strings.Contains(strings.ToLower(value), "yaml"):
-			return bodyeditor.SyntaxYAML
-		case strings.Contains(strings.ToLower(value), "graphql"):
-			return bodyeditor.SyntaxGraphQL
+		if strings.EqualFold(name, "Content-Type") {
+			ct = value
+			break
 		}
 	}
-
-	trimmed := strings.TrimSpace(body)
-	if trimmed == "" {
-		return bodyeditor.SyntaxText
-	}
-	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
-		return bodyeditor.SyntaxJSON
-	}
-	if strings.HasPrefix(trimmed, "---") || strings.Contains(trimmed, ": ") {
-		return bodyeditor.SyntaxYAML
-	}
-	first := strings.Fields(trimmed)
-	if len(first) > 0 {
-		switch first[0] {
-		case "query", "mutation", "subscription", "fragment":
-			return bodyeditor.SyntaxGraphQL
-		}
-	}
-	return bodyeditor.SyntaxText
+	return bodyeditor.Syntax(common.DetectSyntax(ct, body))
 }
 
 // KeyMap defines the key bindings for the request pane.

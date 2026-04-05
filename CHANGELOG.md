@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Unified `DetectSyntax` utility.** `requestpane` and `responsepane` each had ~40 lines of duplicated content-type heuristics. Both now delegate to a single `common.DetectSyntax(contentType, body string) string` that checks the Content-Type header first, then falls back to body sniffing. As a side effect, the request pane now also recognises XML and HTML bodies when no Content-Type header is set.
+
 - **Unified `FormatSize` utility.** `statusbar` and `responsepane` each had their own `formatSize` — the statusbar version was missing the MB branch (a 10 MB response would render as `10485.8KB`). Both have been replaced with a single `common.FormatSize` that correctly handles B / KB / MB.
 
 ### Fixed

@@ -24,7 +24,9 @@ type Map struct {
 	NewTab   key.Binding
 	CloseTab key.Binding
 
-	Help key.Binding
+	Help   key.Binding
+	Quit   key.Binding
+	Escape key.Binding
 }
 
 // Default is the shared ferret keymap.
@@ -35,8 +37,9 @@ var Default = Map{
 	CollectionCycle: key.NewBinding(key.WithKeys("c"), key.WithHelp("c", "cycle collection")),
 	WorkspacePick:   key.NewBinding(key.WithKeys("C", "shift+c"), key.WithHelp("C", "pick a collection")),
 	Help:            key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "help")),
-
-	URLFocus: key.NewBinding(key.WithKeys("ctrl+u"), key.WithHelp("^u", "edit url")),
+	Quit:            key.NewBinding(key.WithKeys("ctrl+c", "q"), key.WithHelp("q", "quit")),
+	Escape:          key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "escape")),
+	URLFocus:        key.NewBinding(key.WithKeys("ctrl+u"), key.WithHelp("^u", "edit url")),
 
 	MethodCycle:   key.NewBinding(key.WithKeys("m"), key.WithHelp("m", "cycle method")),
 	MethodPicker:  key.NewBinding(key.WithKeys("M", "shift+m"), key.WithHelp("M", "pick a method")),

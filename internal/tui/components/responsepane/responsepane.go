@@ -490,26 +490,15 @@ func (m *Model) rebuildBodyCache() {
 // detectLexer picks a chroma lexer from the Content-Type header, falling back
 // to content sniffing, then plaintext.
 func (m Model) detectLexer() string {
-	ct := m.headers["Content-Type"]
-	if len(ct) > 0 {
-		v := strings.ToLower(ct[0])
-		switch {
-		case strings.Contains(v, "json"):
-			return "json"
-		case strings.Contains(v, "xml"):
-			return "xml"
-		case strings.Contains(v, "html"):
-			return "html"
-		}
+	var ct string
+	if values := m.headers["Content-Type"]; len(values) > 0 {
+		ct = values[0]
 	}
-	s := strings.TrimSpace(string(m.body))
-	if strings.HasPrefix(s, "{") || strings.HasPrefix(s, "[") {
-		return "json"
+	result := common.DetectSyntax(ct, string(m.body))
+	if result == "text" {
+		return "plaintext"
 	}
-	if strings.HasPrefix(s, "<") {
-		return "xml"
-	}
-	return "plaintext"
+	return result
 }
 
 // syntaxHighlight applies chroma terminal256/evergarden highlighting.

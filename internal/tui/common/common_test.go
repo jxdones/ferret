@@ -53,6 +53,111 @@ func TestClampMin(t *testing.T) {
 	}
 }
 
+func TestDetectSyntax(t *testing.T) {
+	tests := []struct {
+		name        string
+		contentType string
+		body        string
+		want        string
+	}{
+		// Content-Type header takes priority.
+		{
+			name:        "json_content_type",
+			contentType: "application/json",
+			body:        "",
+			want:        "json",
+		},
+		{
+			name:        "yaml_content_type",
+			contentType: "application/yaml",
+			body:        "",
+			want:        "yaml",
+		},
+		{
+			name:        "xml_content_type",
+			contentType: "application/xml",
+			body:        "",
+			want:        "xml",
+		},
+		{
+			name:        "html_content_type",
+			contentType: "text/html",
+			body:        "",
+			want:        "html",
+		},
+		{
+			name:        "graphql_content_type",
+			contentType: "application/graphql",
+			body:        "",
+			want:        "graphql",
+		},
+		{
+			name:        "content_type_case_insensitive",
+			contentType: "Application/JSON; charset=utf-8",
+			body:        "",
+			want:        "json",
+		},
+		// Body sniffing when no content-type is present.
+		{
+			name:        "json_object_body",
+			contentType: "",
+			body:        `{"key": "value"}`,
+			want:        "json",
+		},
+		{
+			name:        "json_array_body",
+			contentType: "",
+			body:        `[1, 2, 3]`,
+			want:        "json",
+		},
+		{
+			name:        "xml_body",
+			contentType: "",
+			body:        `<root><child/></root>`,
+			want:        "xml",
+		},
+		{
+			name:        "yaml_body_with_separator",
+			contentType: "",
+			body:        "---\nkey: value",
+			want:        "yaml",
+		},
+		{
+			name:        "graphql_query_body",
+			contentType: "",
+			body:        "query { user { id } }",
+			want:        "graphql",
+		},
+		{
+			name:        "graphql_mutation_body",
+			contentType: "",
+			body:        "mutation CreateUser { ... }",
+			want:        "graphql",
+		},
+		{
+			name:        "empty_body_returns_text",
+			contentType: "",
+			body:        "",
+			want:        "text",
+		},
+		{
+			name:        "unrecognised_body_returns_text",
+			contentType: "",
+			body:        "hello world",
+			want:        "text",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := DetectSyntax(tt.contentType, tt.body)
+			if got != tt.want {
+				t.Fatalf("DetectSyntax(%q, %q) = %q, want %q", tt.contentType, tt.body, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFormatSize(t *testing.T) {
 	tests := []struct {
 		name string
