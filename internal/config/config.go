@@ -12,6 +12,7 @@ import (
 // Config is the root of ~/.ferret/config.yaml.
 type Config struct {
 	Workspaces []Workspace `yaml:"workspaces"`
+	Theme      string      `yaml:"theme,omitempty"`
 }
 
 // Workspace is a named directory that contains one or more ferret collections

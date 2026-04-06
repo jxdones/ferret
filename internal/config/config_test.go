@@ -151,6 +151,46 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "reads_theme_field",
+			setup: func(t *testing.T, home string) {
+				t.Helper()
+				dir := filepath.Join(home, ".ferret")
+				if err := os.MkdirAll(dir, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				content := "theme: princess\nworkspaces:\n  - name: work\n    path: /opt/work\n"
+				if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(content), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			},
+			checkFunc: func(t *testing.T, cfg Config) {
+				t.Helper()
+				if cfg.Theme != "princess" {
+					t.Fatalf("Theme = %q, want %q", cfg.Theme, "princess")
+				}
+			},
+		},
+		{
+			name: "theme_defaults_to_empty_when_absent",
+			setup: func(t *testing.T, home string) {
+				t.Helper()
+				dir := filepath.Join(home, ".ferret")
+				if err := os.MkdirAll(dir, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				content := "workspaces:\n  - name: work\n    path: /opt/work\n"
+				if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(content), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			},
+			checkFunc: func(t *testing.T, cfg Config) {
+				t.Helper()
+				if cfg.Theme != "" {
+					t.Fatalf("Theme = %q, want empty string", cfg.Theme)
+				}
+			},
+		},
+		{
 			name: "returns_error_on_invalid_yaml",
 			setup: func(t *testing.T, home string) {
 				t.Helper()

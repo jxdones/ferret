@@ -64,10 +64,11 @@ func TestMethodColor(t *testing.T) {
 	}
 }
 
-func TestDefaultTheme_HasNonNilColors(t *testing.T) {
-	th := DefaultTheme()
-
-	colors := []struct {
+func themeColors(th Theme) []struct {
+	name string
+	c    color.Color
+} {
+	return []struct {
 		name string
 		c    color.Color
 	}{
@@ -96,12 +97,156 @@ func TestDefaultTheme_HasNonNilColors(t *testing.T) {
 		{name: "StatusCodeError", c: th.StatusCodeError},
 		{name: "OverlayBorder", c: th.OverlayBorder},
 		{name: "OverlayFooter", c: th.OverlayFooter},
+		{name: "RequestPaneLabel", c: th.RequestPaneLabel},
+		{name: "ResponsePaneLabel", c: th.ResponsePaneLabel},
+		{name: "TitleBarWorkspace", c: th.TitleBarWorkspace},
+		{name: "TitleBarCollection", c: th.TitleBarCollection},
+		{name: "TitleBarSeparator", c: th.TitleBarSeparator},
+		{name: "TitleBarEntry", c: th.TitleBarEntry},
+		{name: "RequestCancel", c: th.RequestCancel},
 	}
+}
 
-	for _, c := range colors {
+func TestDefaultTheme_HasNonNilColors(t *testing.T) {
+	th := DefaultTheme()
+	for _, c := range themeColors(th) {
 		t.Run(c.name, func(t *testing.T) {
 			if c.c == nil {
 				t.Fatalf("DefaultTheme().%s is nil", c.name)
+			}
+		})
+	}
+}
+
+func TestPrincessTheme_HasNonNilColors(t *testing.T) {
+	th := PrincessTheme()
+	for _, c := range themeColors(th) {
+		t.Run(c.name, func(t *testing.T) {
+			if c.c == nil {
+				t.Fatalf("PrincessTheme().%s is nil", c.name)
+			}
+		})
+	}
+}
+
+func TestDraculaTheme_HasNonNilColors(t *testing.T) {
+	th := DraculaTheme()
+	for _, c := range themeColors(th) {
+		t.Run(c.name, func(t *testing.T) {
+			if c.c == nil {
+				t.Fatalf("DraculaTheme().%s is nil", c.name)
+			}
+		})
+	}
+}
+
+func TestCatppuccinTheme_HasNonNilColors(t *testing.T) {
+	th := CatppuccinTheme()
+	for _, c := range themeColors(th) {
+		t.Run(c.name, func(t *testing.T) {
+			if c.c == nil {
+				t.Fatalf("CatppuccinTheme().%s is nil", c.name)
+			}
+		})
+	}
+}
+
+func TestGruvboxTheme_HasNonNilColors(t *testing.T) {
+	th := GruvboxTheme()
+	for _, c := range themeColors(th) {
+		t.Run(c.name, func(t *testing.T) {
+			if c.c == nil {
+				t.Fatalf("GruvboxTheme().%s is nil", c.name)
+			}
+		})
+	}
+}
+
+func TestSolarizedTheme_HasNonNilColors(t *testing.T) {
+	th := SolarizedTheme()
+	for _, c := range themeColors(th) {
+		t.Run(c.name, func(t *testing.T) {
+			if c.c == nil {
+				t.Fatalf("SolarizedTheme().%s is nil", c.name)
+			}
+		})
+	}
+}
+
+func TestEverforestTheme_HasNonNilColors(t *testing.T) {
+	th := EverforestTheme()
+	for _, c := range themeColors(th) {
+		t.Run(c.name, func(t *testing.T) {
+			if c.c == nil {
+				t.Fatalf("EverforestTheme().%s is nil", c.name)
+			}
+		})
+	}
+}
+
+func TestThemeByName(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantTheme Theme
+	}{
+		{
+			name:      "princess_lowercase",
+			input:     "princess",
+			wantTheme: PrincessTheme(),
+		},
+		{
+			name:      "princess_uppercase",
+			input:     "PRINCESS",
+			wantTheme: PrincessTheme(),
+		},
+		{
+			name:      "princess_mixed_case",
+			input:     "Princess",
+			wantTheme: PrincessTheme(),
+		},
+		{
+			name:      "empty_falls_back_to_default",
+			input:     "",
+			wantTheme: DefaultTheme(),
+		},
+		{
+			name:      "unknown_falls_back_to_default",
+			input:     "nonexistent",
+			wantTheme: DefaultTheme(),
+		},
+		{
+			name:      "dracula",
+			input:     "dracula",
+			wantTheme: DraculaTheme(),
+		},
+		{
+			name:      "catppuccin",
+			input:     "catppuccin",
+			wantTheme: CatppuccinTheme(),
+		},
+		{
+			name:      "gruvbox",
+			input:     "gruvbox",
+			wantTheme: GruvboxTheme(),
+		},
+		{
+			name:      "solarized",
+			input:     "solarized",
+			wantTheme: SolarizedTheme(),
+		},
+		{
+			name:      "everforest",
+			input:     "everforest",
+			wantTheme: EverforestTheme(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ThemeByName(tt.input)
+			if got.TextAccent != tt.wantTheme.TextAccent {
+				t.Fatalf("ThemeByName(%q).TextAccent = %v, want %v", tt.input, got.TextAccent, tt.wantTheme.TextAccent)
 			}
 		})
 	}

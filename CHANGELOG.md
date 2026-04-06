@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Add theme support.** Now themes are set on the config file. We added 6 new themes to ferret `princess`, `dracula`, `catppuccin`, `gruvbox`, `solarized`, `everforest`.
+
 ## [0.2.4] - 2026-04-05
 
 ### Added

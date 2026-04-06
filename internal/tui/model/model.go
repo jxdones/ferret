@@ -17,6 +17,7 @@ import (
 	"github.com/jxdones/ferret/internal/tui/components/titlebar"
 	"github.com/jxdones/ferret/internal/tui/components/urlbar"
 	"github.com/jxdones/ferret/internal/tui/components/workspacepicker"
+	"github.com/jxdones/ferret/internal/tui/theme"
 )
 
 // StartOptions configures TUI startup from the CLI.
@@ -28,6 +29,7 @@ type StartOptions struct {
 	// WorkspaceName is the config workspace name shown in the title bar when Dir
 	// comes from the first entry in config (implicit -d); empty otherwise.
 	WorkspaceName string
+	Theme         string
 }
 
 // requestTab holds the per-tab request/response context.
@@ -80,6 +82,7 @@ type Model struct {
 
 // Start runs the TUI.
 func Start(opts StartOptions) error {
+	theme.Current = theme.ThemeByName(opts.Theme)
 	m, err := New(opts)
 	if err != nil {
 		return err

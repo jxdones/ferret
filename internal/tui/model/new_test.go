@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/jxdones/ferret/internal/tui/theme"
 )
 
 func TestNew_scratchNoWorkspace(t *testing.T) {
@@ -33,6 +35,63 @@ func TestNew_scratchNoWorkspace(t *testing.T) {
 	view := m.titlebar.View().Content
 	if !strings.Contains(view, "no workspace") {
 		t.Fatalf("titlebar should show no workspace, got %q", view)
+	}
+}
+
+func TestNew_withPrincessTheme(t *testing.T) {
+	prev := theme.Current
+	t.Cleanup(func() { theme.Current = prev })
+
+	theme.Current = theme.ThemeByName("princess")
+
+	tmp := t.TempDir()
+	m, err := New(StartOptions{
+		Dir:                 tmp,
+		ImplicitDirectory:   true,
+		ConfigHasWorkspaces: false,
+	})
+	if err != nil {
+		t.Fatalf("New() with princess theme: %v", err)
+	}
+	if m.workspaceRoot != tmp {
+		t.Fatalf("workspaceRoot = %q, want %q", m.workspaceRoot, tmp)
+	}
+}
+
+func TestStart_themeAppliedFromOptions(t *testing.T) {
+	prev := theme.Current
+	t.Cleanup(func() { theme.Current = prev })
+
+	tests := []struct {
+		name      string
+		themeName string
+		wantTheme theme.Theme
+	}{
+		{
+			name:      "princess_theme_applied",
+			themeName: "princess",
+			wantTheme: theme.PrincessTheme(),
+		},
+		{
+			name:      "empty_theme_falls_back_to_default",
+			themeName: "",
+			wantTheme: theme.DefaultTheme(),
+		},
+		{
+			name:      "unknown_theme_falls_back_to_default",
+			themeName: "nonexistent",
+			wantTheme: theme.DefaultTheme(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Replicate the theme-setting line from Start() without running the TUI.
+			theme.Current = theme.ThemeByName(tt.themeName)
+			if theme.Current.TextAccent != tt.wantTheme.TextAccent {
+				t.Fatalf("theme.Current.TextAccent = %v, want %v", theme.Current.TextAccent, tt.wantTheme.TextAccent)
+			}
+		})
 	}
 }
 

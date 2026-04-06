@@ -51,6 +51,7 @@ var RootCmd = &cobra.Command{
 			ImplicitDirectory:   implicitDir,
 			ConfigHasWorkspaces: hasWorkspaces,
 			WorkspaceName:       workspaceName,
+			Theme:               cfg.Theme,
 		})
 	},
 }

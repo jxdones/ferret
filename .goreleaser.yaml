@@ -1,0 +1,24 @@
+version: 2
+
+project_name: ferret
+
+builds:
+  - binary: ferret
+    main: .
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/jxdones/ferret/cmd.version=$(version)
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats: [tar.gz]
+    name_template: "ferret_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
