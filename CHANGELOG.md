@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-04-05
+
 ### Added
 
 - **Horizontal scroll in the response body tab.** The body pane now supports horizontal scrolling via `h`/`l` (or left/right arrows). `0` jumps to the beginning of the line and `$` jumps to the end of the longest line. The horizontal offset resets automatically when a new response arrives.
