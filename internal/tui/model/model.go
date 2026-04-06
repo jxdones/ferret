@@ -95,41 +95,8 @@ func New(opts StartOptions) (Model, error) {
 		return Model{}, err
 	}
 
-	scratchNoWorkspace := opts.ImplicitDirectory && !opts.ConfigHasWorkspaces
-	cliEnv := opts.EnvName
-	if scratchNoWorkspace {
-		cliEnv = ""
-	}
-
-	if scratchNoWorkspace {
-		e := env.NewFromShell()
-		u := urlbar.New()
-		u.SetMethod("GET")
-		rp := requestpane.New()
-		m := Model{
-			titlebar: titlebar.New(),
-			tabs: []requestTab{{
-				id:             1,
-				title:          "new request",
-				collectionRoot: "",
-				urlbar:         u,
-				requestPane:    rp,
-				responsePane:   responsepane.New(),
-			}},
-			nextTabID:       2,
-			activeTab:       0,
-			collection:      collection.New(),
-			workspacePicker: workspacepicker.New(),
-			statusbar:       statusbar.New(),
-			methods:         methodpicker.New(),
-			workspaceRoot:   workspaceRoot,
-			workspaceName:   "",
-			collectionDirs:  nil,
-			env:             e,
-			envName:         "",
-			focus:           focusRequestPane,
-			lastPane:        requestPane,
-		}
+	if opts.ImplicitDirectory && !opts.ConfigHasWorkspaces {
+		m := buildModel(workspaceRoot, "", nil, env.NewFromShell(), "")
 		m.titlebar.SetWorkspace("no workspace")
 		m.titlebar.SetCollection("")
 		m.titlebar.SetEnv("")
@@ -141,21 +108,31 @@ func New(opts StartOptions) (Model, error) {
 	if err != nil {
 		return Model{}, fmt.Errorf("model: discover collections in %s: %w", workspaceRoot, err)
 	}
-	e, resolvedEnv, err := env.ResolveStartEnvFromAll(collectionDirs, cliEnv)
+	e, resolvedEnv, err := env.ResolveStartEnvFromAll(collectionDirs, opts.EnvName)
 	if err != nil {
 		return Model{}, fmt.Errorf("model: environment: %w", err)
 	}
 
+	m := buildModel(workspaceRoot, opts.WorkspaceName, collectionDirs, e, resolvedEnv)
+	m.titlebar.SetWorkspace(m.workspaceName)
+	m.titlebar.SetEnv(resolvedEnv)
+	m.syncChildStateWithLayout()
+	return m, nil
+}
+
+// buildModel constructs a base Model with all components initialized to their
+// defaults. Callers are responsible for setting titlebar state and calling
+// syncChildStateWithLayout afterwards.
+func buildModel(workspaceRoot, workspaceName string, collectionDirs []string, e *env.Env, envName string) Model {
 	u := urlbar.New()
 	u.SetMethod("GET")
-	rp := requestpane.New()
-	m := Model{
+	return Model{
 		titlebar: titlebar.New(),
 		tabs: []requestTab{{
 			id:           1,
 			title:        "new request",
 			urlbar:       u,
-			requestPane:  rp,
+			requestPane:  requestpane.New(),
 			responsePane: responsepane.New(),
 		}},
 		activeTab:       0,
@@ -165,18 +142,13 @@ func New(opts StartOptions) (Model, error) {
 		statusbar:       statusbar.New(),
 		methods:         methodpicker.New(),
 		workspaceRoot:   workspaceRoot,
-		workspaceName:   opts.WorkspaceName,
+		workspaceName:   workspaceName,
 		collectionDirs:  collectionDirs,
 		env:             e,
-		envName:         resolvedEnv,
+		envName:         envName,
 		focus:           focusRequestPane,
 		lastPane:        requestPane,
 	}
-
-	m.titlebar.SetWorkspace(m.workspaceName)
-	m.titlebar.SetEnv(resolvedEnv)
-	m.syncChildStateWithLayout()
-	return m, nil
 }
 
 // tab returns a pointer to the active request tab.
