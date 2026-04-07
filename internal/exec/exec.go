@@ -178,6 +178,11 @@ func unresolvedVars(s string) string {
 // interpolate replaces all {{key}} placeholders in a string with values
 // resolved from the environment.
 func interpolate(s string, e *env.Env) string {
+	// Resolution order: Shell -> Session -> File. Because each layer replaces
+	// placeholders in-place on s, a value introduced by an earlier layer can
+	// itself contain {{KEY}} syntax and will be resolved by a later layer.
+	// This multi-pass behaviour is intentional. It enables shell variables
+	// to reference environment-file values, but it means layer order matters.
 	for _, m := range []map[string]string{e.Shell, e.Session, e.File} {
 		for k, v := range m {
 			s = strings.ReplaceAll(s, "{{"+k+"}}", v)
