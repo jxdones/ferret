@@ -17,7 +17,7 @@ type Request struct {
 	URL     string            `yaml:"url"`
 	Headers map[string]string `yaml:"headers"`
 	Body    string            `yaml:"body"`
-	Auth    string            `yaml:"auth"`
+	Auth    *Auth             `yaml:"auth,omitempty"`
 }
 
 // Entry represents a single entry in the collection.
@@ -28,17 +28,25 @@ type Entry struct {
 
 // Config represents the collection configuration.
 type Config struct {
-	Name string     `yaml:"name"`
-	Auth AuthConfig `yaml:"auth"`
+	Name string `yaml:"name"`
+	Auth *Auth  `yaml:"auth,omitempty"`
 }
 
-// AuthConfig represents the authentication configuration.
-type AuthConfig struct {
-	Type         string `yaml:"type"`
-	TokenURL     string `yaml:"token_url"`
-	ClientID     string `yaml:"client_id"`
-	ClientSecret string `yaml:"client_secret"`
-	InjectAs     string `yaml:"inject_as"`
+type Auth struct {
+	Type string `yaml:"type"`
+
+	// bearer auth
+	Token string `yaml:"token,omitempty"`
+
+	// basic auth
+	Username string `yaml:"username,omitempty"`
+	Password string `yaml:"password,omitempty"`
+
+	// api key auth
+	Key   string `yaml:"key,omitempty"`
+	Value string `yaml:"value,omitempty"`
+	In    string `yaml:"in,omitempty"` // header or query
+
 }
 
 // LoadRequest loads a request from a file.

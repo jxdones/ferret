@@ -2,6 +2,7 @@ package exec
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -77,12 +78,13 @@ func TestInterpolate(t *testing.T) {
 
 func TestExecute(t *testing.T) {
 	tests := []struct {
-		name      string
-		ctx       func(t *testing.T) context.Context
-		req       func(t *testing.T) (collection.Request, *env.Env)
-		wantErr   bool
-		errSubstr string
-		check     func(t *testing.T, res Result)
+		name           string
+		ctx            func(t *testing.T) context.Context
+		req            func(t *testing.T) (collection.Request, *env.Env)
+		collectionAuth *collection.Auth
+		wantErr        bool
+		errSubstr      string
+		check          func(t *testing.T, res Result)
 	}{
 		{
 			name: "empty_url_fails",
@@ -263,6 +265,54 @@ func TestExecute(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "collection_level_bearer_auth_is_applied_when_request_has_no_auth",
+			req: func(t *testing.T) (collection.Request, *env.Env) {
+				t.Helper()
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.Header.Get("Authorization") != "Bearer collection-token" {
+						http.Error(w, "unauthorized", http.StatusUnauthorized)
+						return
+					}
+					w.WriteHeader(http.StatusOK)
+				}))
+				t.Cleanup(srv.Close)
+				return collection.Request{Method: http.MethodGet, URL: srv.URL}, &env.Env{}
+			},
+			collectionAuth: &collection.Auth{Type: "bearer", Token: "collection-token"},
+			check: func(t *testing.T, res Result) {
+				t.Helper()
+				if res.Status != http.StatusOK {
+					t.Fatalf("Status = %d, want %d", res.Status, http.StatusOK)
+				}
+			},
+		},
+		{
+			name: "request_level_auth_overrides_collection_level_auth",
+			req: func(t *testing.T) (collection.Request, *env.Env) {
+				t.Helper()
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.Header.Get("Authorization") != "Bearer request-token" {
+						http.Error(w, "unauthorized", http.StatusUnauthorized)
+						return
+					}
+					w.WriteHeader(http.StatusOK)
+				}))
+				t.Cleanup(srv.Close)
+				return collection.Request{
+					Method: http.MethodGet,
+					URL:    srv.URL,
+					Auth:   &collection.Auth{Type: "bearer", Token: "request-token"},
+				}, &env.Env{}
+			},
+			collectionAuth: &collection.Auth{Type: "bearer", Token: "collection-token"},
+			check: func(t *testing.T, res Result) {
+				t.Helper()
+				if res.Status != http.StatusOK {
+					t.Fatalf("Status = %d, want %d", res.Status, http.StatusOK)
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -272,7 +322,7 @@ func TestExecute(t *testing.T) {
 				ctx = tt.ctx(t)
 			}
 			req, e := tt.req(t)
-			res, err := Execute(ctx, req, e)
+			res, err := Execute(ctx, req, tt.collectionAuth, e)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error")
@@ -287,6 +337,143 @@ func TestExecute(t *testing.T) {
 			}
 			if tt.check != nil {
 				tt.check(t, res)
+			}
+		})
+	}
+}
+
+func TestApplyAuth(t *testing.T) {
+	tests := []struct {
+		name  string
+		auth  *collection.Auth
+		env   *env.Env
+		check func(t *testing.T, r *http.Request)
+	}{
+		{
+			name: "nil_auth_is_noop",
+			auth: nil,
+			env:  &env.Env{},
+			check: func(t *testing.T, r *http.Request) {
+				t.Helper()
+				if got := r.Header.Get("Authorization"); got != "" {
+					t.Fatalf("Authorization header = %q, want empty", got)
+				}
+			},
+		},
+		{
+			name: "bearer_sets_authorization_header_with_interpolation",
+			auth: &collection.Auth{Type: "bearer", Token: "{{TOKEN}}"},
+			env:  &env.Env{Shell: map[string]string{"TOKEN": "abc123"}},
+			check: func(t *testing.T, r *http.Request) {
+				t.Helper()
+				if got := r.Header.Get("Authorization"); got != "Bearer abc123" {
+					t.Fatalf("Authorization header = %q, want %q", got, "Bearer abc123")
+				}
+			},
+		},
+		{
+			name: "basic_sets_authorization_header_with_interpolation",
+			auth: &collection.Auth{Type: "basic", Username: "{{USER}}", Password: "{{PASS}}"},
+			env:  &env.Env{Session: map[string]string{"USER": "u", "PASS": "p"}},
+			check: func(t *testing.T, r *http.Request) {
+				t.Helper()
+				want := "Basic " + base64.StdEncoding.EncodeToString([]byte("u:p"))
+				if got := r.Header.Get("Authorization"); got != want {
+					t.Fatalf("Authorization header = %q, want %q", got, want)
+				}
+			},
+		},
+		{
+			name: "apikey_in_header_sets_interpolated_key_and_value",
+			auth: &collection.Auth{Type: "apikey", Key: "X-{{K}}", Value: "{{V}}"},
+			env:  &env.Env{File: map[string]string{"K": "API-KEY", "V": "secret"}},
+			check: func(t *testing.T, r *http.Request) {
+				t.Helper()
+				if got := r.Header.Get("X-API-KEY"); got != "secret" {
+					t.Fatalf("X-API-KEY header = %q, want %q", got, "secret")
+				}
+			},
+		},
+		{
+			name: "apikey_in_query_sets_interpolated_key_and_value",
+			auth: &collection.Auth{Type: "apikey", In: "query", Key: "k", Value: "{{V}}"},
+			env:  &env.Env{Shell: map[string]string{"V": "v"}},
+			check: func(t *testing.T, r *http.Request) {
+				t.Helper()
+				if got := r.URL.Query().Get("k"); got != "v" {
+					t.Fatalf("query k = %q, want %q", got, "v")
+				}
+				if got := r.Header.Get("k"); got != "" {
+					t.Fatalf("header k = %q, want empty (should be query param)", got)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := http.NewRequest(http.MethodGet, "https://example.com/path?existing=1", nil)
+			if err != nil {
+				t.Fatalf("NewRequest: %v", err)
+			}
+			applyAuth(r, tt.auth, tt.env)
+			if tt.check != nil {
+				tt.check(t, r)
+			}
+			if got := r.URL.Query().Get("existing"); got != "1" {
+				t.Fatalf("existing query param = %q, want %q", got, "1")
+			}
+		})
+	}
+}
+
+func TestBuildHTTPRequest_AppliesAuth(t *testing.T) {
+	tests := []struct {
+		name  string
+		in    collection.Request
+		env   *env.Env
+		check func(t *testing.T, r *http.Request)
+	}{
+		{
+			name: "bearer_sets_authorization_header",
+			in: collection.Request{
+				Method: http.MethodGet,
+				URL:    "https://example.com/",
+				Auth:   &collection.Auth{Type: "bearer", Token: "{{TOKEN}}"},
+			},
+			env: &env.Env{Shell: map[string]string{"TOKEN": "t"}},
+			check: func(t *testing.T, r *http.Request) {
+				t.Helper()
+				if got := r.Header.Get("Authorization"); got != "Bearer t" {
+					t.Fatalf("Authorization header = %q, want %q", got, "Bearer t")
+				}
+			},
+		},
+		{
+			name: "apikey_query_sets_query_param",
+			in: collection.Request{
+				Method: http.MethodGet,
+				URL:    "https://example.com/path",
+				Auth:   &collection.Auth{Type: "apikey", In: "query", Key: "k", Value: "{{V}}"},
+			},
+			env: &env.Env{Shell: map[string]string{"V": "v"}},
+			check: func(t *testing.T, r *http.Request) {
+				t.Helper()
+				if got := r.URL.Query().Get("k"); got != "v" {
+					t.Fatalf("query k = %q, want %q", got, "v")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := buildHTTPRequest(context.Background(), tt.in, tt.in.Auth, tt.env)
+			if err != nil {
+				t.Fatalf("buildHTTPRequest: %v", err)
+			}
+			if tt.check != nil {
+				tt.check(t, req)
 			}
 		})
 	}

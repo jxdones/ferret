@@ -39,7 +39,12 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		result, err := exec.Execute(context.Background(), request, environment)
+		cfg, err := collection.LoadConfig(argDir)
+		if err != nil {
+			return err
+		}
+
+		result, err := exec.Execute(context.Background(), request, cfg.Auth, environment)
 		if err != nil {
 			return err
 		}

@@ -51,7 +51,11 @@ func (m Model) handleRequestKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 		ctx, cancel := context.WithCancel(context.Background())
 		m.tab().cancel = cancel
 		m.tab().isLoading = true
-		return m, sendRequestCmd(m.buildRequest(), m.env, m.tab().id, ctx)
+		var collectionAuth *collectiondata.Auth
+		if cfg, err := collectiondata.LoadConfig(m.tab().collectionRoot); err == nil {
+			collectionAuth = cfg.Auth
+		}
+		return m, sendRequestCmd(m.buildRequest(), collectionAuth, m.env, m.tab().id, ctx)
 	case key.Matches(msg, keys.Default.NewRequest):
 		cmd := m.startNewRequest()
 		return m, cmd
@@ -156,11 +160,11 @@ func (m *Model) startNewRequest() tea.Cmd {
 }
 
 // sendRequestCmd sends a command to send a request and returns the appropriate message based on the result.
-func sendRequestCmd(req collectiondata.Request, e *env.Env, tabIndex int, ctx context.Context) tea.Cmd {
+func sendRequestCmd(req collectiondata.Request, collectionAuth *collectiondata.Auth, e *env.Env, tabIndex int, ctx context.Context) tea.Cmd {
 	return tea.Batch(
 		func() tea.Msg { return RequestStartedMsg{TabID: tabIndex} },
 		func() tea.Msg {
-			result, err := exec.Execute(ctx, req, e)
+			result, err := exec.Execute(ctx, req, collectionAuth, e)
 			if err != nil {
 				return RequestFailedMsg{TabID: tabIndex, Error: err}
 			}

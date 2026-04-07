@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jxdones/ferret/internal/auth"
 	"github.com/jxdones/ferret/internal/collection"
 	"github.com/jxdones/ferret/internal/env"
 )
@@ -50,7 +51,7 @@ type TraceEvent struct {
 }
 
 // Execute sends an HTTP request and returns the result.
-func Execute(ctx context.Context, req collection.Request, e *env.Env) (Result, error) {
+func Execute(ctx context.Context, req collection.Request, collectionAuth *collection.Auth, e *env.Env) (Result, error) {
 	// If no deadline is set, set a default timeout.
 	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
 		var cancel context.CancelFunc
@@ -58,7 +59,8 @@ func Execute(ctx context.Context, req collection.Request, e *env.Env) (Result, e
 		defer cancel()
 	}
 
-	httpReq, err := buildHTTPRequest(ctx, req, e)
+	resolvedAuth := auth.Resolve(req.Auth, collectionAuth)
+	httpReq, err := buildHTTPRequest(ctx, req, resolvedAuth, e)
 	if err != nil {
 		return Result{}, err
 	}
@@ -122,7 +124,7 @@ func resultFromResponse(resp *http.Response, body []byte, duration time.Duration
 
 // buildHTTPRequest applies env interpolation, validates the URL, and builds an
 // *http.Request.
-func buildHTTPRequest(ctx context.Context, req collection.Request, e *env.Env) (*http.Request, error) {
+func buildHTTPRequest(ctx context.Context, req collection.Request, resolvedAuth *collection.Auth, e *env.Env) (*http.Request, error) {
 	url := interpolate(req.URL, e)
 	if strings.TrimSpace(url) == "" {
 		return nil, fmt.Errorf("url is required")
@@ -148,6 +150,7 @@ func buildHTTPRequest(ctx context.Context, req collection.Request, e *env.Env) (
 		httpReq.Header.Set(k, interpolate(v, e))
 	}
 	setDefaultHeaders(httpReq)
+	applyAuth(httpReq, resolvedAuth, e)
 	return httpReq, nil
 }
 
@@ -189,4 +192,27 @@ func interpolate(s string, e *env.Env) string {
 		}
 	}
 	return s
+}
+
+// applyAuth applies the authentication configuration to the request.
+func applyAuth(r *http.Request, auth *collection.Auth, e *env.Env) {
+	if auth == nil {
+		return
+	}
+	switch auth.Type {
+	case "bearer":
+		r.Header.Set("Authorization", "Bearer "+interpolate(auth.Token, e))
+	case "basic":
+		r.SetBasicAuth(interpolate(auth.Username, e), interpolate(auth.Password, e))
+	case "apikey":
+		key := interpolate(auth.Key, e)
+		val := interpolate(auth.Value, e)
+		if auth.In == "query" {
+			q := r.URL.Query()
+			q.Set(key, val)
+			r.URL.RawQuery = q.Encode()
+		} else {
+			r.Header.Set(key, val)
+		}
+	}
 }

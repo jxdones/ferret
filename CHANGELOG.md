@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-04-07
+
 - **Add theme support.** Now themes are set on the config file. We added 6 new themes to ferret `princess`, `dracula`, `catppuccin`, `gruvbox`, `solarized`, `everforest`.
+
+### Added
+
+- **First-class auth support.** Requests and collections now support a structured `auth` field with four built-in types: `bearer`, `basic`, `apikey` (header or query param), and `none`. Auth values support `{{variable}}` interpolation. Request-level auth overrides the collection default; omitting `auth` on a request inherits from `.ferret.yaml`. The old `auth: string` stub on `Request` and `AuthConfig` on `Config` have been replaced with a unified `Auth` struct.
 
 ## [0.2.4] - 2026-04-05
 

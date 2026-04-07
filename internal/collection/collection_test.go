@@ -36,7 +36,10 @@ func TestSaveRequest_WritesYAMLAndCreatesDirectories(t *testing.T) {
 			"Content-Type": "application/json",
 		},
 		Body: `{"ok":true}`,
-		Auth: "bearer",
+		Auth: &Auth{
+			Type:  "bearer",
+			Token: "token",
+		},
 	}
 	if err := SaveRequest(path, in); err != nil {
 		t.Fatalf("SaveRequest: %v", err)
@@ -46,8 +49,26 @@ func TestSaveRequest_WritesYAMLAndCreatesDirectories(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadRequest: %v", err)
 	}
-	if out.Name != in.Name || out.Method != in.Method || out.URL != in.URL || out.Body != in.Body || out.Auth != in.Auth {
-		t.Fatalf("roundtrip mismatch: in=%#v out=%#v", in, out)
+	if out.Name != in.Name {
+		t.Fatalf("Name mismatch: got %q want %q", out.Name, in.Name)
+	}
+	if out.Method != in.Method {
+		t.Fatalf("Method mismatch: got %q want %q", out.Method, in.Method)
+	}
+	if out.URL != in.URL {
+		t.Fatalf("URL mismatch: got %q want %q", out.URL, in.URL)
+	}
+	if out.Body != in.Body {
+		t.Fatalf("Body mismatch: got %q want %q", out.Body, in.Body)
+	}
+	if out.Auth == nil {
+		t.Fatal("Auth is nil after roundtrip")
+	}
+	if out.Auth.Type != in.Auth.Type {
+		t.Fatalf("Auth.Type mismatch: got %q want %q", out.Auth.Type, in.Auth.Type)
+	}
+	if out.Auth.Token != in.Auth.Token {
+		t.Fatalf("Auth.Token mismatch: got %q want %q", out.Auth.Token, in.Auth.Token)
 	}
 	if out.Headers["Content-Type"] != "application/json" {
 		t.Fatalf("expected header to roundtrip, out.Headers=%v", out.Headers)
