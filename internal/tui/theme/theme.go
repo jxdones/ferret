@@ -36,6 +36,7 @@ type Theme struct {
 	StatusSuccess color.Color
 	StatusWarning color.Color
 	StatusError   color.Color
+	StatusHook    color.Color
 
 	// HTTP status code colors.
 	StatusCodeOK    color.Color
@@ -140,6 +141,7 @@ func DraculaTheme() Theme {
 		StatusSuccess: cc("#50fa7b", "84", "2"),
 		StatusWarning: cc("#ffaf5f", "215", "3"),
 		StatusError:   cc("#ff5f5f", "203", "1"),
+		StatusHook:    cc("#bd93f9", "183", "5"),
 
 		StatusCodeOK:    cc("#50fa7b", "84", "2"),
 		StatusCodeError: cc("#ff5f5f", "203", "1"),
@@ -187,6 +189,7 @@ func CatppuccinTheme() Theme {
 		StatusSuccess: cc("#a6e3a1", "150", "2"),
 		StatusWarning: cc("#f9e2af", "223", "3"),
 		StatusError:   cc("#f38ba8", "211", "1"),
+		StatusHook:    cc("#cba6f7", "183", "5"),
 
 		StatusCodeOK:    cc("#a6e3a1", "150", "2"),
 		StatusCodeError: cc("#f38ba8", "211", "1"),
@@ -234,6 +237,7 @@ func GruvboxTheme() Theme {
 		StatusSuccess: cc("#b8bb26", "142", "2"),
 		StatusWarning: cc("#fabd2f", "214", "3"),
 		StatusError:   cc("#fb4934", "203", "1"),
+		StatusHook:    cc("#d3869b", "175", "5"),
 
 		StatusCodeOK:    cc("#b8bb26", "142", "2"),
 		StatusCodeError: cc("#fb4934", "203", "1"),
@@ -281,6 +285,7 @@ func SolarizedTheme() Theme {
 		StatusSuccess: cc("#859900", "100", "2"),
 		StatusWarning: cc("#d75f00", "166", "3"),
 		StatusError:   cc("#d70000", "160", "1"),
+		StatusHook:    cc("#6c71c4", "62", "5"),
 
 		StatusCodeOK:    cc("#859900", "100", "2"),
 		StatusCodeError: cc("#d70000", "160", "1"),
@@ -328,6 +333,7 @@ func EverforestTheme() Theme {
 		StatusSuccess: cc("#a7c080", "142", "2"),
 		StatusWarning: cc("#dbbc7f", "214", "3"),
 		StatusError:   cc("#e67e80", "167", "1"),
+		StatusHook:    cc("#d699b6", "182", "5"),
 
 		StatusCodeOK:    cc("#a7c080", "142", "2"),
 		StatusCodeError: cc("#e67e80", "167", "1"),
@@ -376,6 +382,7 @@ func PrincessTheme() Theme {
 		StatusSuccess: cc("#047E84", "30", "6"),
 		StatusWarning: cc("#FCA17D", "215", "3"),
 		StatusError:   cc("#CC3802", "166", "1"),
+		StatusHook:    cc("#9A348E", "127", "5"),
 
 		StatusCodeOK:    cc("#047E84", "30", "6"),
 		StatusCodeError: cc("#CC3802", "166", "1"),
@@ -424,6 +431,7 @@ func DefaultTheme() Theme {
 		StatusSuccess: cc("#5fd7af", "79", "6"),
 		StatusWarning: cc("#ffb86c", "215", "3"),
 		StatusError:   cc("#ff5f87", "204", "1"),
+		StatusHook:    cc("#af87d7", "140", "5"),
 
 		StatusCodeOK:    cc("#5fd7af", "79", "6"),
 		StatusCodeError: cc("#ff5f87", "204", "1"),

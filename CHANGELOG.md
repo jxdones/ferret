@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Pre-request hooks.** Requests and collections now support a `pre_request` field pointing to an executable script. Before each request is sent, ferret runs the script and merges any `KEY=value` lines from stdout into the session environment, making those variables available for interpolation in the URL, headers, body, and auth fields. Scripts are shebang-based and language-agnostic (shell, Python, Node, etc.). The full ferret environment (file, session, and shell layers) is passed to the script as process environment variables so hooks can reference `{{variables}}` directly. Hook resolution follows the same inherit/override pattern as auth: omitting `pre_request` on a request means no hook runs. Setting it to `inherit` uses the collection default from `.ferret.yaml`. Any path runs that specific script.
+
+- **Hook status in the TUI.** While a hook is running the status bar shows `Running <script-name>` in a distinct color with a spinner. Once the hook finishes the status transitions to the normal `Making request` state. Pressing `^x` cancels the hook mid-run. Hooks time out after 10 seconds.
+
 ## [0.2.5] - 2026-04-07
 
 - **Add theme support.** Now themes are set on the config file. We added 6 new themes to ferret `princess`, `dracula`, `catppuccin`, `gruvbox`, `solarized`, `everforest`.

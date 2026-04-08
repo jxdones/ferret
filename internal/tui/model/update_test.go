@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/jxdones/ferret/internal/env"
 	"github.com/jxdones/ferret/internal/exec"
 	"github.com/jxdones/ferret/internal/tui/components/collection"
 	"github.com/jxdones/ferret/internal/tui/components/methodpicker"
@@ -318,6 +319,117 @@ func TestOnRequestFailed(t *testing.T) {
 
 			if next.tabs[0].isLoading != tt.wantLoading {
 				t.Fatalf("isLoading = %v, want %v", next.tabs[0].isLoading, tt.wantLoading)
+			}
+			if tt.wantCmd && cmd == nil {
+				t.Fatal("expected a cmd")
+			}
+			if !tt.wantCmd && cmd != nil {
+				t.Fatal("did not expect a cmd")
+			}
+		})
+	}
+}
+
+func TestOnHookFinished(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(*Model)
+		vars        map[string]string
+		wantCmd     bool
+		wantSession map[string]string
+	}{
+		{
+			name: "merges_vars_into_session_env_and_fires_request",
+			setup: func(m *Model) {
+				m.env = env.NewFromShell()
+				req := m.buildRequest()
+				m.tab().pendingReq = &req
+				m.tab().pendingCtx = nil
+			},
+			vars:        map[string]string{"TOKEN": "abc", "user": "jones"},
+			wantCmd:     true,
+			wantSession: map[string]string{"TOKEN": "abc", "user": "jones"},
+		},
+		{
+			name:        "no_op_when_pending_req_is_nil",
+			setup:       func(m *Model) {},
+			vars:        map[string]string{"TOKEN": "abc"},
+			wantCmd:     false,
+			wantSession: map[string]string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t)
+			tt.setup(&m)
+
+			next, cmd := m.onHookFinished(HookFinishedMsg{TabID: m.tabs[0].id, Vars: tt.vars})
+
+			if tt.wantCmd && cmd == nil {
+				t.Fatal("expected a cmd")
+			}
+			if !tt.wantCmd && cmd != nil {
+				t.Fatal("did not expect a cmd")
+			}
+			for k, v := range tt.wantSession {
+				got, ok := next.env.Session[k]
+				if !ok {
+					t.Fatalf("session missing key %q", k)
+				}
+				if got != v {
+					t.Fatalf("session[%q] = %q, want %q", k, got, v)
+				}
+			}
+		})
+	}
+}
+
+func TestOnHookFailed(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(*Model)
+		wantLoading bool
+		wantCmd     bool
+	}{
+		{
+			name:        "shows_error_and_clears_loading_on_active_tab",
+			setup:       func(m *Model) { m.tabs[0].isLoading = true },
+			wantLoading: false,
+			wantCmd:     true,
+		},
+		{
+			name: "clears_loading_silently_on_background_tab",
+			setup: func(m *Model) {
+				m.newTab()
+				m.tabs[0].isLoading = true
+			},
+			wantLoading: false,
+			wantCmd:     false,
+		},
+		{
+			name: "clears_pending_state",
+			setup: func(m *Model) {
+				req := m.buildRequest()
+				m.tabs[0].isLoading = true
+				m.tabs[0].pendingReq = &req
+				m.tabs[0].pendingAuth = nil
+			},
+			wantLoading: false,
+			wantCmd:     true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestModel(t)
+			tt.setup(&m)
+
+			next, cmd := m.onHookFailed(HookFailedMsg{TabID: m.tabs[0].id, Error: errors.New("hook failed")})
+
+			if next.tabs[0].isLoading != tt.wantLoading {
+				t.Fatalf("isLoading = %v, want %v", next.tabs[0].isLoading, tt.wantLoading)
+			}
+			if next.tabs[0].pendingReq != nil {
+				t.Fatal("pendingReq should be nil after hook failure")
 			}
 			if tt.wantCmd && cmd == nil {
 				t.Fatal("expected a cmd")

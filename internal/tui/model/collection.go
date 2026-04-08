@@ -55,6 +55,8 @@ func (m Model) handleCollectionModalKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 			m.tab().requestPane.SetBody(entry.Request.Body)
 			m.tab().requestPane.ResetBodyFocus()
 			m.tab().responsePane.Reset()
+			m.tab().loadedAuth = entry.Request.Auth
+			m.tab().loadedPreRequest = entry.Request.PreRequest
 			m.tab().requestName = entryDisplayTitle(entry)
 			m.tab().refreshTitle()
 			m.titlebar.SetEntry(entryDisplayTitle(entry))

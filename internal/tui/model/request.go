@@ -2,6 +2,8 @@ package model
 
 import (
 	"context"
+	"maps"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	collectiondata "github.com/jxdones/ferret/internal/collection"
 	"github.com/jxdones/ferret/internal/env"
 	"github.com/jxdones/ferret/internal/exec"
+	"github.com/jxdones/ferret/internal/hook"
 	"github.com/jxdones/ferret/internal/tui/components/statusbar"
 	"github.com/jxdones/ferret/internal/tui/keys"
 )
@@ -41,6 +44,16 @@ type RequestFailedMsg struct {
 	Error error
 }
 
+type HookFinishedMsg struct {
+	TabID int
+	Vars  map[string]string
+}
+
+type HookFailedMsg struct {
+	TabID int
+	Error error
+}
+
 // handleRequestKey handles the key press for the request.
 func (m Model) handleRequestKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 	switch {
@@ -51,11 +64,25 @@ func (m Model) handleRequestKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 		ctx, cancel := context.WithCancel(context.Background())
 		m.tab().cancel = cancel
 		m.tab().isLoading = true
+		req := m.buildRequest()
 		var collectionAuth *collectiondata.Auth
+		var scriptPath string
 		if cfg, err := collectiondata.LoadConfig(m.tab().collectionRoot); err == nil {
 			collectionAuth = cfg.Auth
+			scriptPath = hook.Resolve(&req, &cfg)
 		}
-		return m, sendRequestCmd(m.buildRequest(), collectionAuth, m.env, m.tab().id, ctx)
+		m.tab().pendingReq = &req
+		m.tab().pendingAuth = collectionAuth
+		m.tab().pendingCtx = ctx
+		if scriptPath != "" {
+			scriptPath = filepath.Join(m.tab().collectionRoot, scriptPath)
+			statusbarHookCmd := m.statusbar.SetHook(scriptPath)
+			return m, tea.Batch(
+				statusbarHookCmd,
+				runHookCommand(ctx, scriptPath, m.env, m.tab().id),
+			)
+		}
+		return m, sendRequestCmd(req, collectionAuth, m.env, m.tab().id, ctx)
 	case key.Matches(msg, keys.Default.NewRequest):
 		cmd := m.startNewRequest()
 		return m, cmd
@@ -140,6 +167,36 @@ func (m Model) onRequestFailed(msg RequestFailedMsg) (Model, tea.Cmd) {
 	return m, nil
 }
 
+// onHookFinished merges hook vars into the session env and fires the request.
+func (m Model) onHookFinished(msg HookFinishedMsg) (Model, tea.Cmd) {
+	tab := m.tab()
+	if tab.pendingReq == nil {
+		return m, nil
+	}
+	for k, v := range msg.Vars {
+		m.env.Set(k, v)
+	}
+	return m, sendRequestCmd(*tab.pendingReq, tab.pendingAuth, m.env, msg.TabID, tab.pendingCtx)
+}
+
+// onHookFailed handles a hook execution error.
+func (m Model) onHookFailed(msg HookFailedMsg) (Model, tea.Cmd) {
+	for i := range m.tabs {
+		if m.tabs[i].id == msg.TabID {
+			m.tabs[i].isLoading = false
+			m.tabs[i].cancel = nil
+			m.tabs[i].pendingReq = nil
+			m.tabs[i].pendingAuth = nil
+			m.tabs[i].pendingCtx = nil
+			if i == m.activeTab {
+				return m, m.statusbar.SetError(msg.Error.Error())
+			}
+			break
+		}
+	}
+	return m, nil
+}
+
 // startNewRequest starts a new request.
 func (m *Model) startNewRequest() tea.Cmd {
 	m.titlebar.SetEntry("")
@@ -151,6 +208,8 @@ func (m *Model) startNewRequest() tea.Cmd {
 	m.tab().requestPane.ResetBodyFocus()
 	m.tab().responsePane.Reset()
 	m.tab().requestName = ""
+	m.tab().loadedAuth = nil
+	m.tab().loadedPreRequest = ""
 	m.tab().title = "new request"
 	m.statusbar.SetIdle()
 	m.lastPane = requestPane
@@ -187,13 +246,34 @@ func sendRequestCmd(req collectiondata.Request, collectionAuth *collectiondata.A
 	)
 }
 
+// runHookCommand runs a hook command and returns the appropriate message based on the result.
+const hookTimeout = 10 * time.Second
+
+func runHookCommand(ctx context.Context, scriptPath string, e *env.Env, tabIndex int) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(ctx, hookTimeout)
+		defer cancel()
+		result, err := hook.Run(ctx, scriptPath, e)
+		if err != nil {
+			return HookFailedMsg{TabID: tabIndex, Error: err}
+		}
+		vars := make(map[string]string)
+		if result != nil {
+			maps.Copy(vars, result.Vars)
+		}
+		return HookFinishedMsg{TabID: tabIndex, Vars: vars}
+	}
+}
+
 // buildRequest builds a request from the current URL bar and request pane.
 func (m Model) buildRequest() collectiondata.Request {
 	return collectiondata.Request{
-		Method:  m.tab().urlbar.Method(),
-		URL:     m.tab().urlbar.URL(),
-		Headers: m.tab().requestPane.Headers(),
-		Body:    m.tab().requestPane.Body(),
+		Method:     m.tab().urlbar.Method(),
+		URL:        m.tab().urlbar.URL(),
+		Headers:    m.tab().requestPane.Headers(),
+		Body:       m.tab().requestPane.Body(),
+		Auth:       m.tab().loadedAuth,
+		PreRequest: m.tab().loadedPreRequest,
 	}
 }
 

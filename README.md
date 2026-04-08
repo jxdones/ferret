@@ -13,8 +13,6 @@
 ![Go Version](https://img.shields.io/badge/go-1.26+-00ADD8.svg)
 </div>
 
-> **Work in progress.** ferret is under active development. Commands, keybindings, and file formats may change between versions.
-
 ferret is a terminal API client where collections are plain YAML files, sitting next to your code, versioned in git, and reviewable in a PR. No cloud accounts, no sync buttons, and no proprietary formats.
 
 Open the TUI to explore interactively. Run requests in CI with the CLI. Same files, same environments, same behavior everywhere.
@@ -57,7 +55,7 @@ go install github.com/jxdones/ferret@latest
 ferret
 
 # Execute a request via CLI
-ferret run ./collections/login.yaml -e prod --raw | jq .
+ferret run ./collections/login.yaml -e prod | jq .
 ```
 
 ## Collection Layout

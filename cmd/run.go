@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/jxdones/ferret/internal/collection"
 	"github.com/jxdones/ferret/internal/env"
 	"github.com/jxdones/ferret/internal/exec"
+	"github.com/jxdones/ferret/internal/hook"
 	"github.com/jxdones/ferret/internal/render"
 
 	"github.com/spf13/cobra"
@@ -44,6 +46,19 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
+		scriptPath := hook.Resolve(&request, &cfg)
+		if scriptPath != "" {
+			scriptPath = filepath.Join(argDir, scriptPath)
+			hookResult, err := hook.Run(context.Background(), scriptPath, environment)
+			if err != nil {
+				return err
+			}
+			if hookResult != nil {
+				for k, v := range hookResult.Vars {
+					environment.Set(k, v)
+				}
+			}
+		}
 		result, err := exec.Execute(context.Background(), request, cfg.Auth, environment)
 		if err != nil {
 			return err

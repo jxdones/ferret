@@ -3,6 +3,7 @@ package statusbar
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ const (
 	Success
 	Warning
 	Error
+	Hook
 )
 
 const defaultStatusMessage = " Ready"
@@ -108,6 +110,15 @@ func (m *Model) HandleExpired(msg ExpiredMsg) {
 	m.kind = Info
 }
 
+// SetHook transitions to the hook-running state and starts the spinner.
+// scriptPath is shown as the script name so the user knows which hook is running.
+func (m *Model) SetHook(scriptPath string) tea.Cmd {
+	m.spinning = true
+	m.response = nil
+	m.SetStatus("Running "+filepath.Join(filepath.Base(filepath.Dir(scriptPath)), filepath.Base(scriptPath)), Hook)
+	return m.spinner.Tick
+}
+
 // SetSending transitions to the sending state and starts the spinner.
 // Clears any previous response metadata so the right side is blank while in
 // flight.
@@ -192,6 +203,8 @@ func (m Model) renderLeft() string {
 		style = lipgloss.NewStyle().Foreground(theme.Current.StatusWarning).Bold(true)
 	case Error:
 		style = lipgloss.NewStyle().Foreground(theme.Current.StatusError).Bold(true)
+	case Hook:
+		style = lipgloss.NewStyle().Foreground(theme.Current.StatusHook).Bold(true)
 	}
 
 	text := m.text

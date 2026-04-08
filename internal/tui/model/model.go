@@ -43,8 +43,14 @@ type requestTab struct {
 	responsePane   responsepane.Model
 	cancel         context.CancelFunc
 	lastResponse   *statusbar.Response
+	isLoading      bool
 
-	isLoading bool
+	loadedAuth       *collectiondata.Auth
+	loadedPreRequest string
+
+	pendingReq  *collectiondata.Request
+	pendingAuth *collectiondata.Auth
+	pendingCtx  context.Context
 }
 
 // Model is the main application model for the ferret TUI.

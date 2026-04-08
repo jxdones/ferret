@@ -12,12 +12,13 @@ import (
 
 // Request represents a single API request.
 type Request struct {
-	Name    string            `yaml:"name"`
-	Method  string            `yaml:"method"`
-	URL     string            `yaml:"url"`
-	Headers map[string]string `yaml:"headers"`
-	Body    string            `yaml:"body"`
-	Auth    *Auth             `yaml:"auth,omitempty"`
+	Name       string            `yaml:"name"`
+	Method     string            `yaml:"method"`
+	URL        string            `yaml:"url"`
+	Headers    map[string]string `yaml:"headers"`
+	Body       string            `yaml:"body"`
+	Auth       *Auth             `yaml:"auth,omitempty"`
+	PreRequest string            `yaml:"pre_request,omitempty"`
 }
 
 // Entry represents a single entry in the collection.
@@ -28,8 +29,9 @@ type Entry struct {
 
 // Config represents the collection configuration.
 type Config struct {
-	Name string `yaml:"name"`
-	Auth *Auth  `yaml:"auth,omitempty"`
+	Name       string `yaml:"name"`
+	PreRequest string `yaml:"pre_request,omitempty"`
+	Auth       *Auth  `yaml:"auth,omitempty"`
 }
 
 type Auth struct {

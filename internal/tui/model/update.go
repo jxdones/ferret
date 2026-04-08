@@ -27,6 +27,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case RequestFailedMsg:
 		next, cmd := m.onRequestFailed(msg)
 		return next, cmd
+	case HookFinishedMsg:
+		next, cmd := m.onHookFinished(msg)
+		return next, cmd
+	case HookFailedMsg:
+		next, cmd := m.onHookFailed(msg)
+		return next, cmd
 	case tea.WindowSizeMsg:
 		next, cmd := m.handleWindowSize(msg)
 		return next, batch(cmd, next.statusbar.Update(msg))
