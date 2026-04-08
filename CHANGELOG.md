@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-04-07
+
+### Fixed
+
+- **Wide-character cursor misalignment in the body editor.** The cursor highlight was positioned by rune count instead of display columns, causing it to land in the wrong cell when the body contained CJK, hangul characters or emoji (each 2 display columns wide). The render loop now advances by `uniseg.StringWidth` per rune, matching the display-column offset reported by the textarea.
+
 ### Added
 
 - **Pre-request hooks.** Requests and collections now support a `pre_request` field pointing to an executable script. Before each request is sent, ferret runs the script and merges any `KEY=value` lines from stdout into the session environment, making those variables available for interpolation in the URL, headers, body, and auth fields. Scripts are shebang-based and language-agnostic (shell, Python, Node, etc.). The full ferret environment (file, session, and shell layers) is passed to the script as process environment variables so hooks can reference `{{variables}}` directly. Hook resolution follows the same inherit/override pattern as auth: omitting `pre_request` on a request means no hook runs. Setting it to `inherit` uses the collection default from `.ferret.yaml`. Any path runs that specific script.

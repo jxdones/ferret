@@ -378,13 +378,14 @@ func buildLines(segments []segment, textWidth, cursorHardRow, cursorSubRow, curs
 				colPos := 0
 				cursorPlaced := false
 				for _, rr := range subRow {
+					w := uniseg.StringWidth(string(rr.r))
 					if !cursorPlaced && colPos == cursorColOffset {
 						sb.WriteString(cursorStyle.Render(string(rr.r)))
 						cursorPlaced = true
 					} else {
 						sb.WriteString(rr.style.Render(string(rr.r)))
 					}
-					colPos++
+					colPos += w
 				}
 				if !cursorPlaced {
 					sb.WriteString(cursorStyle.Render(" "))

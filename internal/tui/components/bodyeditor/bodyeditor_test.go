@@ -216,6 +216,50 @@ func TestBuildLines(t *testing.T) {
 			focused:   false,
 			wantLines: []string{"hello ", "world "},
 		},
+		{
+			name:            "wide_char_cursor_on_wide_char",
+			input:           "中A",
+			syntax:          SyntaxText,
+			textWidth:       20,
+			cursorHardRow:   0,
+			cursorSubRow:    0,
+			cursorColOffset: 0, // display col 0: on 中
+			focused:         true,
+			wantLines:       []string{"中A "},
+		},
+		{
+			name:            "wide_char_cursor_after_wide_char",
+			input:           "中A",
+			syntax:          SyntaxText,
+			textWidth:       20,
+			cursorHardRow:   0,
+			cursorSubRow:    0,
+			cursorColOffset: 2, // display col 2: on A (中 consumed cols 0-1)
+			focused:         true,
+			wantLines:       []string{"中A "},
+		},
+		{
+			name:            "wide_char_cursor_after_multiple_wide_chars",
+			input:           "中일A",
+			syntax:          SyntaxText,
+			textWidth:       20,
+			cursorHardRow:   0,
+			cursorSubRow:    0,
+			cursorColOffset: 4, // display col 4: on A (两个일 consumed cols 0-3)
+			focused:         true,
+			wantLines:       []string{"中일A "},
+		},
+		{
+			name:            "wide_char_cursor_inside_wide_char_falls_to_end",
+			input:           "中A",
+			syntax:          SyntaxText,
+			textWidth:       20,
+			cursorHardRow:   0,
+			cursorSubRow:    0,
+			cursorColOffset: 1, // display col 1: inside 中, no rune boundary
+			focused:         true,
+			wantLines:       []string{"中A  "},
+		},
 	}
 
 	for _, tt := range tests {
