@@ -15,11 +15,17 @@ type Model struct {
 	env        string
 	entry      string
 	width      int
+	theme      theme.Theme
 }
 
 // New creates a initialized titlebar model.
 func New() Model {
-	return Model{}
+	return Model{theme: theme.Current}
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
 }
 
 // SetSize sets the width of the titlebar.
@@ -50,12 +56,12 @@ func (m *Model) SetEntry(name string) {
 
 // View returns the titlebar view.
 func (m *Model) View() tea.View {
-	workspaceStyle := lipgloss.NewStyle().Foreground(theme.Current.TitleBarWorkspace)
-	collectionStyle := lipgloss.NewStyle().Foreground(theme.Current.TitleBarCollection)
-	entryStyle := lipgloss.NewStyle().Bold(true).Foreground(theme.Current.TitleBarEntry)
-	sepStyle := lipgloss.NewStyle().Foreground(theme.Current.TitleBarSeparator)
-	fileEnv := lipgloss.NewStyle().Bold(true).Foreground(theme.Current.TextAccent)
-	shellEnv := lipgloss.NewStyle().Foreground(theme.Current.MethodPATCH)
+	workspaceStyle := lipgloss.NewStyle().Foreground(m.theme.TitleBarWorkspace)
+	collectionStyle := lipgloss.NewStyle().Foreground(m.theme.TitleBarCollection)
+	entryStyle := lipgloss.NewStyle().Bold(true).Foreground(m.theme.TitleBarEntry)
+	sepStyle := lipgloss.NewStyle().Foreground(m.theme.TitleBarSeparator)
+	fileEnv := lipgloss.NewStyle().Bold(true).Foreground(m.theme.TextAccent)
+	shellEnv := lipgloss.NewStyle().Foreground(m.theme.MethodPATCH)
 
 	sep := sepStyle.Render(" / ")
 

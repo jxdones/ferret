@@ -41,7 +41,7 @@ func TestRenderShortcuts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tuitest.StripANSI(RenderShortcuts(tt.width, bindings))
+			got := tuitest.StripANSI(RenderShortcuts(tt.width, bindings, tuitest.StableTestTheme()))
 
 			// Should never exceed its content width (minContentWidth or width - padding).
 			contentWidth := max(minContentWidth, tt.width-horizontalPaddingColumns)

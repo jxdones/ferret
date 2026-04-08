@@ -84,6 +84,8 @@ type Model struct {
 	lastPane     pane
 	activeModal  modalKind
 	helpExpanded bool
+
+	theme theme.Theme
 }
 
 // Start runs the TUI.
@@ -133,23 +135,49 @@ func New(opts StartOptions) (Model, error) {
 // defaults. Callers are responsible for setting titlebar state and calling
 // syncChildStateWithLayout afterwards.
 func buildModel(workspaceRoot, workspaceName string, collectionDirs []string, e *env.Env, envName string) Model {
+	t := theme.Current
+
+	tb := titlebar.New()
+	tb.SetTheme(t)
+
+	col := collection.New()
+	col.SetTheme(t)
+
+	wp := workspacepicker.New()
+	wp.SetTheme(t)
+
+	sb := statusbar.New()
+	sb.SetTheme(t)
+
+	mp := methodpicker.New()
+	mp.SetTheme(t)
+
 	u := urlbar.New()
 	u.SetMethod("GET")
+	u.SetTheme(t)
+
+	rp := requestpane.New()
+	rp.SetTheme(t)
+
+	resp := responsepane.New()
+	resp.SetTheme(t)
+
 	return Model{
-		titlebar: titlebar.New(),
+		theme:    t,
+		titlebar: tb,
 		tabs: []requestTab{{
 			id:           1,
 			title:        "new request",
 			urlbar:       u,
-			requestPane:  requestpane.New(),
-			responsePane: responsepane.New(),
+			requestPane:  rp,
+			responsePane: resp,
 		}},
 		activeTab:       0,
 		nextTabID:       2,
-		collection:      collection.New(),
-		workspacePicker: workspacepicker.New(),
-		statusbar:       statusbar.New(),
-		methods:         methodpicker.New(),
+		collection:      col,
+		workspacePicker: wp,
+		statusbar:       sb,
+		methods:         mp,
 		workspaceRoot:   workspaceRoot,
 		workspaceName:   workspaceName,
 		collectionDirs:  collectionDirs,
@@ -161,7 +189,7 @@ func buildModel(workspaceRoot, workspaceName string, collectionDirs []string, e 
 }
 
 // tab returns a pointer to the active request tab.
-func (m Model) tab() *requestTab {
+func (m *Model) tab() *requestTab {
 	return &m.tabs[m.activeTab]
 }
 
@@ -169,14 +197,23 @@ func (m Model) tab() *requestTab {
 func (m *Model) newTab() tea.Cmd {
 	// increment the next tab ID and use it for the new tab
 	m.nextTabID++
+
 	u := urlbar.New()
 	u.SetMethod("GET")
+	u.SetTheme(m.theme)
+
+	rp := requestpane.New()
+	rp.SetTheme(m.theme)
+
+	resp := responsepane.New()
+	resp.SetTheme(m.theme)
+
 	m.tabs = append(m.tabs, requestTab{
 		id:           m.nextTabID,
 		title:        "new request",
 		urlbar:       u,
-		requestPane:  requestpane.New(),
-		responsePane: responsepane.New(),
+		requestPane:  rp,
+		responsePane: resp,
 	})
 	m.activeTab = len(m.tabs) - 1
 	m.focus = focusURLBar

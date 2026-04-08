@@ -88,18 +88,18 @@ func ThemeByName(name string) Theme {
 }
 
 // MethodColor returns the themed color for an HTTP method.
-func MethodColor(method string) color.Color {
+func (t Theme) MethodColor(method string) color.Color {
 	switch strings.ToUpper(strings.TrimSpace(method)) {
 	case "POST":
-		return Current.MethodPOST
+		return t.MethodPOST
 	case "PUT":
-		return Current.MethodPUT
+		return t.MethodPUT
 	case "DELETE":
-		return Current.MethodDELETE
+		return t.MethodDELETE
 	case "PATCH":
-		return Current.MethodPATCH
+		return t.MethodPATCH
 	default:
-		return Current.MethodGET
+		return t.MethodGET
 	}
 }
 

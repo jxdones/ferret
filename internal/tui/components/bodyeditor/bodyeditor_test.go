@@ -264,8 +264,8 @@ func TestBuildLines(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			segs := tokenize(tt.syntax, tt.input)
-			lines := buildLines(segs, tt.textWidth, tt.cursorHardRow, tt.cursorSubRow, tt.cursorColOffset, tt.focused)
+			segs := tokenize(tt.syntax, tt.input, tuitest.StableTestTheme())
+			lines := buildLines(segs, tt.textWidth, tt.cursorHardRow, tt.cursorSubRow, tt.cursorColOffset, tt.focused, tuitest.StableTestTheme())
 
 			if len(lines) != len(tt.wantLines) {
 				t.Fatalf("buildLines: got %d lines, want %d\ngot:  %q\nwant: %q",

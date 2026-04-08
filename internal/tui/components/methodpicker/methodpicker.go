@@ -16,6 +16,7 @@ type Model struct {
 	methods []string
 	cursor  int
 	width   int
+	theme   theme.Theme
 }
 
 // New initializes a method picker model with the default methods.
@@ -24,7 +25,13 @@ func New() Model {
 		methods: defaultMethods,
 		cursor:  0,
 		width:   30,
+		theme:   theme.Current,
 	}
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
 }
 
 // SetSize sets the picker width, clamping to a readable minimum.
@@ -65,13 +72,13 @@ func (m Model) View() tea.View {
 	for i, method := range m.methods {
 		prefix := " "
 		style := lipgloss.NewStyle().
-			Foreground(theme.MethodColor(method)).
+			Foreground(m.theme.MethodColor(method)).
 			Bold(true)
 		if i == m.cursor {
 			prefix = lipgloss.NewStyle().
-				Foreground(theme.Current.TextAccent).
+				Foreground(m.theme.TextAccent).
 				Render("▶")
-			style = style.Foreground(theme.Current.TextAccent)
+			style = style.Foreground(m.theme.TextAccent)
 		}
 		// format the method with a fixed width of 7 characters
 		rows = append(rows, prefix+style.Render(fmt.Sprintf("%-7s", method)))
@@ -79,7 +86,7 @@ func (m Model) View() tea.View {
 
 	if len(rows) == 0 {
 		return tea.NewView(lipgloss.NewStyle().
-			Foreground(theme.Current.TextMuted).
+			Foreground(m.theme.TextMuted).
 			Render(" (no methods)"))
 	}
 	return tea.NewView(strings.Join(rows, "\n"))

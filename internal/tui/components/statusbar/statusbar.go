@@ -54,6 +54,7 @@ type Model struct {
 	spinner  spinner.Model
 	spinning bool
 	width    int
+	theme    theme.Theme
 }
 
 // New initializes a status bar in the idle "Ready" state.
@@ -62,7 +63,13 @@ func New() Model {
 		text:    defaultStatusMessage,
 		kind:    Info,
 		spinner: spinner.New(spinner.WithSpinner(spinner.MiniDot)),
+		theme:   theme.Current,
 	}
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
 }
 
 // SetWidth sets the width of the status bar.
@@ -184,7 +191,7 @@ func (m *Model) View() tea.View {
 		Width(m.width).
 		BorderTop(true).
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(theme.Current.DividerBorder).
+		BorderForeground(m.theme.DividerBorder).
 		Padding(0, 1).
 		Render(content))
 
@@ -193,18 +200,18 @@ func (m *Model) View() tea.View {
 // renderLeft renders the left side of the status bar with the current status
 // text and kind.
 func (m Model) renderLeft() string {
-	style := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
+	style := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
 	switch m.kind {
 	case Info:
-		style = lipgloss.NewStyle().Foreground(theme.Current.StatusInfo).Bold(true)
+		style = lipgloss.NewStyle().Foreground(m.theme.StatusInfo).Bold(true)
 	case Success:
-		style = lipgloss.NewStyle().Foreground(theme.Current.StatusSuccess).Bold(true)
+		style = lipgloss.NewStyle().Foreground(m.theme.StatusSuccess).Bold(true)
 	case Warning:
-		style = lipgloss.NewStyle().Foreground(theme.Current.StatusWarning).Bold(true)
+		style = lipgloss.NewStyle().Foreground(m.theme.StatusWarning).Bold(true)
 	case Error:
-		style = lipgloss.NewStyle().Foreground(theme.Current.StatusError).Bold(true)
+		style = lipgloss.NewStyle().Foreground(m.theme.StatusError).Bold(true)
 	case Hook:
-		style = lipgloss.NewStyle().Foreground(theme.Current.StatusHook).Bold(true)
+		style = lipgloss.NewStyle().Foreground(m.theme.StatusHook).Bold(true)
 	}
 
 	text := m.text
@@ -218,7 +225,7 @@ func (m Model) renderLeft() string {
 // metadata.
 func (m Model) renderRight() string {
 	if m.spinning {
-		cancel := lipgloss.NewStyle().Foreground(theme.Current.RequestCancel)
+		cancel := lipgloss.NewStyle().Foreground(m.theme.RequestCancel)
 		return cancel.Render("^x to cancel")
 	}
 	if m.response == nil {
@@ -232,14 +239,14 @@ func (m Model) renderRight() string {
 		statusText = http.StatusText(m.response.StatusCode)
 	}
 
-	statusCodeColor := theme.Current.StatusCodeOK
+	statusCodeColor := m.theme.StatusCodeOK
 	if m.response.StatusCode >= 400 {
-		statusCodeColor = theme.Current.StatusCodeError
+		statusCodeColor = m.theme.StatusCodeError
 	}
 	status := lipgloss.NewStyle().Foreground(statusCodeColor).Bold(true).
 		Render(fmt.Sprintf("%d %s", m.response.StatusCode, statusText))
 
-	muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
+	muted := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
 	meta := []string{
 		formatDuration(m.response.Duration),
 		common.FormatSize(m.response.Size),

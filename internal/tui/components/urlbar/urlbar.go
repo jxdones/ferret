@@ -16,10 +16,12 @@ type Model struct {
 	input   textinput.Model
 	width   int
 	focused bool
+	theme   theme.Theme
 }
 
 // New creates a initialized urlbar model.
 func New() Model {
+	t := theme.Current
 	ti := textinput.New()
 	ti.Placeholder = "type your URL here..."
 	ti.Prompt = ""
@@ -28,15 +30,26 @@ func New() Model {
 	ti.Blur()
 
 	styles := ti.Styles()
-	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(theme.Current.TextPrimary)
-	styles.Focused.Text = styles.Focused.Text.Foreground(theme.Current.TextPrimary)
-	styles.Blurred.Text = styles.Blurred.Text.Foreground(theme.Current.TextMuted)
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(t.TextPrimary)
+	styles.Focused.Text = styles.Focused.Text.Foreground(t.TextPrimary)
+	styles.Blurred.Text = styles.Blurred.Text.Foreground(t.TextMuted)
 	ti.SetStyles(styles)
 
 	return Model{
 		method: "GET",
 		input:  ti,
+		theme:  t,
 	}
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
+	styles := m.input.Styles()
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(t.TextPrimary)
+	styles.Focused.Text = styles.Focused.Text.Foreground(t.TextPrimary)
+	styles.Blurred.Text = styles.Blurred.Text.Foreground(t.TextMuted)
+	m.input.SetStyles(styles)
 }
 
 // SetSize sets the width of the urlbar.
@@ -89,7 +102,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 // View returns the urlbar view.
 func (m Model) View() tea.View {
-	method := lipgloss.NewStyle().Bold(true).Foreground(theme.MethodColor(m.method)).Render(m.method)
+	method := lipgloss.NewStyle().Bold(true).Foreground(m.theme.MethodColor(m.method)).Render(m.method)
 
 	prefix := " " + method + "  "
 	available := max(0, m.width-ansi.StringWidth(prefix))
@@ -99,7 +112,7 @@ func (m Model) View() tea.View {
 		// textinput.View includes cursor and styling; keep it within the URL field.
 		url = common.TruncatePad(m.input.View(), available)
 	} else {
-		url = lipgloss.NewStyle().Foreground(theme.Current.TextPrimary).
+		url = lipgloss.NewStyle().Foreground(m.theme.TextPrimary).
 			Render(ansi.Truncate(m.input.Value(), available, "…"))
 		url = common.TruncatePad(url, available)
 	}

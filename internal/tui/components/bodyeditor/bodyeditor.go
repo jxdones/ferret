@@ -53,22 +53,31 @@ type visualLine struct {
 type Model struct {
 	input  textarea.Model
 	syntax Syntax
+	theme  theme.Theme
 }
 
 // New creates a body editor with the default textarea configuration.
 func New() Model {
+	t := theme.Current
 	ta := textarea.New()
 	ta.Prompt = ""
 	ta.Placeholder = "request body..."
 	ta.ShowLineNumbers = true
 	ta.CharLimit = maxBodyChars
 	ta.MaxHeight = 999
-	ta.SetStyles(themedStyles(ta.Styles()))
+	ta.SetStyles(themedStyles(ta.Styles(), t))
 
 	return Model{
 		input:  ta,
 		syntax: SyntaxText,
+		theme:  t,
 	}
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
+	m.input.SetStyles(themedStyles(m.input.Styles(), t))
 }
 
 // Value returns the current body text.
@@ -138,8 +147,8 @@ func (m Model) View() string {
 	lineNumDigits := len(strconv.Itoa(max(1, m.input.MaxHeight)))
 
 	li := m.input.LineInfo()
-	segments := tokenize(m.syntax, value)
-	visualLines := buildLines(segments, textWidth, m.input.Line(), li.RowOffset, li.ColumnOffset, m.input.Focused())
+	segments := tokenize(m.syntax, value, m.theme)
+	visualLines := buildLines(segments, textWidth, m.input.Line(), li.RowOffset, li.ColumnOffset, m.input.Focused(), m.theme)
 
 	height := max(1, m.input.Height())
 	scrollOffset := m.input.ScrollYOffset()
@@ -147,8 +156,8 @@ func (m Model) View() string {
 	end := min(start+height, len(visualLines))
 	visible := visualLines[start:end]
 
-	promptStyle := lipgloss.NewStyle().Foreground(theme.Current.TextAccent)
-	lineNumStyle := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
+	promptStyle := lipgloss.NewStyle().Foreground(m.theme.TextAccent)
+	lineNumStyle := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
 
 	var sb strings.Builder
 	for i, vl := range visible {
@@ -198,44 +207,44 @@ func prefixEachLine(s, prefix string) string {
 }
 
 // themedStyles returns the styles for the body editor.
-func themedStyles(styles textarea.Styles) textarea.Styles {
-	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(theme.Current.TextAccent)
-	styles.Focused.Text = styles.Focused.Text.Foreground(theme.Current.TextPrimary)
-	styles.Focused.CursorLine = styles.Focused.CursorLine.Foreground(theme.Current.TextPrimary)
-	styles.Focused.CursorLineNumber = styles.Focused.CursorLineNumber.Foreground(theme.Current.TextMuted)
-	styles.Focused.LineNumber = styles.Focused.LineNumber.Foreground(theme.Current.TextMuted)
-	styles.Focused.Placeholder = styles.Focused.Placeholder.Foreground(theme.Current.TextMuted)
-	styles.Blurred.Prompt = styles.Blurred.Prompt.Foreground(theme.Current.TextMuted)
-	styles.Blurred.Text = styles.Blurred.Text.Foreground(theme.Current.TextPrimary)
-	styles.Blurred.CursorLine = styles.Blurred.CursorLine.Foreground(theme.Current.TextPrimary)
-	styles.Blurred.CursorLineNumber = styles.Blurred.CursorLineNumber.Foreground(theme.Current.TextMuted)
-	styles.Blurred.LineNumber = styles.Blurred.LineNumber.Foreground(theme.Current.TextMuted)
-	styles.Blurred.Placeholder = styles.Blurred.Placeholder.Foreground(theme.Current.TextMuted)
+func themedStyles(styles textarea.Styles, t theme.Theme) textarea.Styles {
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(t.TextAccent)
+	styles.Focused.Text = styles.Focused.Text.Foreground(t.TextPrimary)
+	styles.Focused.CursorLine = styles.Focused.CursorLine.Foreground(t.TextPrimary)
+	styles.Focused.CursorLineNumber = styles.Focused.CursorLineNumber.Foreground(t.TextMuted)
+	styles.Focused.LineNumber = styles.Focused.LineNumber.Foreground(t.TextMuted)
+	styles.Focused.Placeholder = styles.Focused.Placeholder.Foreground(t.TextMuted)
+	styles.Blurred.Prompt = styles.Blurred.Prompt.Foreground(t.TextMuted)
+	styles.Blurred.Text = styles.Blurred.Text.Foreground(t.TextPrimary)
+	styles.Blurred.CursorLine = styles.Blurred.CursorLine.Foreground(t.TextPrimary)
+	styles.Blurred.CursorLineNumber = styles.Blurred.CursorLineNumber.Foreground(t.TextMuted)
+	styles.Blurred.LineNumber = styles.Blurred.LineNumber.Foreground(t.TextMuted)
+	styles.Blurred.Placeholder = styles.Blurred.Placeholder.Foreground(t.TextMuted)
 	return styles
 }
 
 // tokenStyle returns the style for a chroma token type.
-func tokenStyle(t chroma.TokenType) lipgloss.Style {
+func tokenStyle(t chroma.TokenType, th theme.Theme) lipgloss.Style {
 	switch {
 	case t.InCategory(chroma.Keyword):
-		return lipgloss.NewStyle().Foreground(theme.Current.SyntaxKeyword)
+		return lipgloss.NewStyle().Foreground(th.SyntaxKeyword)
 	case t.InCategory(chroma.LiteralString):
-		return lipgloss.NewStyle().Foreground(theme.Current.SyntaxString)
+		return lipgloss.NewStyle().Foreground(th.SyntaxString)
 	case t.InCategory(chroma.LiteralNumber):
-		return lipgloss.NewStyle().Foreground(theme.Current.SyntaxNumber)
+		return lipgloss.NewStyle().Foreground(th.SyntaxNumber)
 	case t.InCategory(chroma.Comment):
-		return lipgloss.NewStyle().Foreground(theme.Current.SyntaxComment)
+		return lipgloss.NewStyle().Foreground(th.SyntaxComment)
 	case t.InCategory(chroma.Operator), t.InCategory(chroma.Punctuation):
-		return lipgloss.NewStyle().Foreground(theme.Current.SyntaxOperator)
+		return lipgloss.NewStyle().Foreground(th.SyntaxOperator)
 	default:
-		return lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
+		return lipgloss.NewStyle().Foreground(th.TextPrimary)
 	}
 }
 
 // tokenize tokenizes the content into segments.
-func tokenize(syntax Syntax, content string) []segment {
+func tokenize(syntax Syntax, content string, th theme.Theme) []segment {
 	if syntax == SyntaxText {
-		return []segment{{text: content, style: lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)}}
+		return []segment{{text: content, style: lipgloss.NewStyle().Foreground(th.TextPrimary)}}
 	}
 
 	lexer := lexers.Get(string(syntax))
@@ -244,14 +253,14 @@ func tokenize(syntax Syntax, content string) []segment {
 	}
 	iter, err := lexer.Tokenise(nil, content)
 	if err != nil {
-		return []segment{{text: content, style: lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)}}
+		return []segment{{text: content, style: lipgloss.NewStyle().Foreground(th.TextPrimary)}}
 	}
 
 	var segments []segment
 	for tok := iter(); tok != chroma.EOF; tok = iter() {
 		segments = append(segments, segment{
 			text:  tok.Value,
-			style: tokenStyle(tok.Type),
+			style: tokenStyle(tok.Type, th),
 		})
 	}
 	return segments
@@ -347,10 +356,10 @@ func wrapRuneStyles(rs []runeStyle, textWidth int) [][]runeStyle {
 }
 
 // buildLines builds the visual lines for the body editor.
-func buildLines(segments []segment, textWidth, cursorHardRow, cursorSubRow, cursorColOffset int, focused bool) []visualLine {
+func buildLines(segments []segment, textWidth, cursorHardRow, cursorSubRow, cursorColOffset int, focused bool, th theme.Theme) []visualLine {
 	cursorStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#000000")).
-		Background(theme.Current.TextPrimary)
+		Background(th.TextPrimary)
 
 	hardLines := [][]runeStyle{{}}
 	lineIdx := 0

@@ -62,18 +62,35 @@ type Model struct {
 	focused   bool
 	bodyFocus bodyFocusID
 	bodyType  bodyTypeID
+	theme     theme.Theme
 }
 
 // New returns an initialized request pane model.
 func New() Model {
-	t := tabs.New(requestTabLabels())
-	t.SetActiveForeground(theme.Current.RequestPaneLabel)
+	t := theme.Current
+	tb := tabs.New(requestTabLabels())
+	tb.SetTheme(t)
+	tb.SetActiveForeground(t.RequestPaneLabel)
+	h := headers.New()
+	h.SetTheme(t)
+	b := bodyeditor.New()
+	b.SetTheme(t)
 	return Model{
-		tabs:      t,
-		headers:   headers.New(),
-		body:      bodyeditor.New(),
+		tabs:      tb,
+		headers:   h,
+		body:      b,
 		bodyFocus: bodyFocusType,
+		theme:     t,
 	}
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
+	m.tabs.SetTheme(t)
+	m.tabs.SetActiveForeground(t.RequestPaneLabel)
+	m.headers.SetTheme(t)
+	m.body.SetTheme(t)
 }
 
 // SetSize sets the dimensions of the request pane model and its child components.
@@ -331,9 +348,9 @@ func (m Model) renderBodyTypeLine() string {
 		bodyTypeRaw,
 	}
 
-	selected := lipgloss.NewStyle().Foreground(theme.Current.TitleBarEntry).Bold(true)
-	muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-	dim := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
+	selected := lipgloss.NewStyle().Foreground(m.theme.TitleBarEntry).Bold(true)
+	muted := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
+	dim := lipgloss.NewStyle().Foreground(m.theme.TextDim)
 
 	var parts []string
 	for _, t := range types {
@@ -351,13 +368,13 @@ func (m Model) renderBodyTypeLine() string {
 func (m Model) paramsView() string {
 	params := parseQueryParams(m.url)
 	if len(params) == 0 {
-		return lipgloss.NewStyle().Foreground(theme.Current.TextMuted).
+		return lipgloss.NewStyle().Foreground(m.theme.TextMuted).
 			Render("  no query params in URL")
 	}
 
-	muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-	dim := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
-	primary := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
+	muted := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
+	dim := lipgloss.NewStyle().Foreground(m.theme.TextDim)
+	primary := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
 
 	keyW := max(8, m.width*2/5)
 	valW := max(8, m.width*2/5)

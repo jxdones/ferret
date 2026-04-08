@@ -116,15 +116,26 @@ type Model struct {
 	width         int
 	height        int
 	focused       bool
+	theme         theme.Theme
 }
 
 // New returns an initialized response pane with no data.
 func New() Model {
-	t := tabs.New(responseTabLabels())
-	t.SetActiveForeground(theme.Current.ResponsePaneLabel)
+	t := theme.Current
+	tb := tabs.New(responseTabLabels())
+	tb.SetTheme(t)
+	tb.SetActiveForeground(t.ResponsePaneLabel)
 	return Model{
-		tabs: t,
+		tabs:  tb,
+		theme: t,
 	}
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
+	m.tabs.SetTheme(t)
+	m.tabs.SetActiveForeground(t.ResponsePaneLabel)
 }
 
 // SetSize propagates available width and height. Height is used for scroll
@@ -278,11 +289,11 @@ func (m Model) activeTab() responseTabID {
 // bodyView renders the body tab content as a multi-line string.
 func (m Model) bodyView() string {
 	if m.responseTooBig {
-		muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
+		muted := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
 		return muted.Render(" response is %s - too large to display", common.FormatSize(m.responseSize))
 	}
 	if len(m.lines) == 0 {
-		return lipgloss.NewStyle().Foreground(theme.Current.TextMuted).
+		return lipgloss.NewStyle().Foreground(m.theme.TextMuted).
 			Render("  send a request to see the response")
 	}
 
@@ -290,7 +301,7 @@ func (m Model) bodyView() string {
 	total := len(all)
 
 	// Info header: line count on the left, scroll range on the right.
-	muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
+	muted := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
 	left := muted.Render(fmt.Sprintf("  %d lines", total))
 	right := ""
 
@@ -307,7 +318,7 @@ func (m Model) bodyView() string {
 	numDigits := len(fmt.Sprintf("%d", total))
 	gutterWidth := numDigits + 2 // space + digits + space
 	contentWidth := max(1, m.width-gutterWidth)
-	numStyle := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
+	numStyle := lipgloss.NewStyle().Foreground(m.theme.TextDim)
 
 	start := min(m.offset, total)
 	end := min(start+viewLines, total)
@@ -330,7 +341,7 @@ func (m Model) bodyView() string {
 // headersView renders the headers tab content as a multi-line string.
 func (m Model) headersView() string {
 	if len(m.headers) == 0 {
-		return lipgloss.NewStyle().Foreground(theme.Current.TextMuted).
+		return lipgloss.NewStyle().Foreground(m.theme.TextMuted).
 			Render("  no response headers yet")
 	}
 
@@ -370,28 +381,28 @@ func (m Model) headersContentLines() []string {
 	if len(rows) == 0 {
 		return nil
 	}
-	return strings.Split(headers.ReadOnlyView(m.width, rows).Content, "\n")
+	return strings.Split(headers.ReadOnlyView(m.width, rows, m.theme).Content, "\n")
 }
 
 // cookiesView renders the cookies tab content as a multi-line string.
 func (m Model) cookiesView() string {
-	return lipgloss.NewStyle().Foreground(theme.Current.TextMuted).
+	return lipgloss.NewStyle().Foreground(m.theme.TextMuted).
 		Render("  no cookies received from the server")
 }
 
 // traceView renders the trace tab content as a multi-line string.
 func (m Model) traceView() string {
 	if len(m.trace.Events) == 0 {
-		return lipgloss.NewStyle().Foreground(theme.Current.TextMuted).
+		return lipgloss.NewStyle().Foreground(m.theme.TextMuted).
 			Render("  no trace data for this request")
 	}
 
-	muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-	primary := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
-	accent := lipgloss.NewStyle().Foreground(theme.Current.TextAccent)
-	fastBar := lipgloss.NewStyle().Foreground(theme.Current.MethodGET)
-	mediumBar := lipgloss.NewStyle().Foreground(theme.Current.MethodPATCH)
-	slowBar := lipgloss.NewStyle().Foreground(theme.Current.MethodDELETE)
+	muted := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
+	primary := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
+	accent := lipgloss.NewStyle().Foreground(m.theme.TextAccent)
+	fastBar := lipgloss.NewStyle().Foreground(m.theme.MethodGET)
+	mediumBar := lipgloss.NewStyle().Foreground(m.theme.MethodPATCH)
+	slowBar := lipgloss.NewStyle().Foreground(m.theme.MethodDELETE)
 
 	totalMs := m.trace.Events[len(m.trace.Events)-1].Elapsed.Milliseconds()
 	if totalMs < 1 {

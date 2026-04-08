@@ -66,25 +66,25 @@ func (m Model) renderModal(base string) string {
 			key.NewBinding(key.WithKeys("up", "down"), key.WithHelp("↑↓", "navigate")),
 			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
 			key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close")),
-		})
-		overlay := modal.Render("requests", m.collection.View().Content, footer, m.modalOuterWidth())
-		return overlayAtCenter(base, overlay, m.width, m.height)
+		}, m.theme)
+		overlay := modal.Render("requests", m.collection.View().Content, footer, m.modalOuterWidth(), m.theme)
+		return overlayAtCenter(base, overlay, m.width, m.height, m.theme)
 	case modalWorkspace:
 		footer := shortcuts.RenderShortcuts(modal.InnerWidth(m.modalOuterWidth()), []key.Binding{
 			key.NewBinding(key.WithKeys("up", "down"), key.WithHelp("↑↓", "navigate")),
 			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
 			key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close")),
-		})
-		overlay := modal.Render("collections", m.workspacePicker.View().Content, footer, m.modalOuterWidth())
-		return overlayAtCenter(base, overlay, m.width, m.height)
+		}, m.theme)
+		overlay := modal.Render("collections", m.workspacePicker.View().Content, footer, m.modalOuterWidth(), m.theme)
+		return overlayAtCenter(base, overlay, m.width, m.height, m.theme)
 	case modalMethod:
 		footer := shortcuts.RenderShortcuts(modal.InnerWidth(m.modalOuterWidth()), []key.Binding{
 			key.NewBinding(key.WithKeys("j", "k", "up", "down"), key.WithHelp("j/k", "navigate")),
 			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
 			key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "close")),
-		})
-		overlay := modal.Render("method", m.methods.View().Content, footer, m.modalOuterWidth())
-		return overlayAtCenter(base, overlay, m.width, m.height)
+		}, m.theme)
+		overlay := modal.Render("method", m.methods.View().Content, footer, m.modalOuterWidth(), m.theme)
+		return overlayAtCenter(base, overlay, m.width, m.height, m.theme)
 	default:
 		return base
 	}
@@ -97,20 +97,20 @@ func (m Model) renderOptions() string {
 		h := help.New()
 		h.ShowAll = true
 		h.SetWidth(m.width)
-		h.Styles.FullKey = lipgloss.NewStyle().Foreground(theme.Current.TextAccent)
-		h.Styles.FullDesc = lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-		h.Styles.FullSeparator = lipgloss.NewStyle().Foreground(theme.Current.DividerBorder)
-		h.Styles.Ellipsis = lipgloss.NewStyle().Foreground(theme.Current.DividerBorder)
+		h.Styles.FullKey = lipgloss.NewStyle().Foreground(m.theme.TextAccent)
+		h.Styles.FullDesc = lipgloss.NewStyle().Foreground(m.theme.TextMuted)
+		h.Styles.FullSeparator = lipgloss.NewStyle().Foreground(m.theme.DividerBorder)
+		h.Styles.Ellipsis = lipgloss.NewStyle().Foreground(m.theme.DividerBorder)
 		content = h.FullHelpView(m.fullHelpBindings())
 	} else {
-		content = shortcuts.RenderShortcuts(m.width, m.statusBindings())
+		content = shortcuts.RenderShortcuts(m.width, m.statusBindings(), m.theme)
 	}
 
 	return lipgloss.NewStyle().
 		Width(m.width).
 		BorderTop(true).
 		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(theme.Current.DividerBorder).
+		BorderForeground(m.theme.DividerBorder).
 		Padding(0, 1).
 		Render(content)
 }
@@ -189,13 +189,13 @@ func (emptyKeyMap) FullHelp() [][]key.Binding { return nil }
 
 // renderDivider renders the full-width horizontal divider below the URL bar.
 func (m Model) renderDivider() string {
-	return lipgloss.NewStyle().Foreground(theme.Current.TextDim).Render(strings.Repeat("─", m.width))
+	return lipgloss.NewStyle().Foreground(m.theme.TextDim).Render(strings.Repeat("─", m.width))
 }
 
 // renderDividerSplit renders the split divider between left and right panes.
 func (m Model) renderDividerSplit() string {
 	mid := m.width / 2
-	center := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
+	center := lipgloss.NewStyle().Foreground(m.theme.TextDim)
 	return center.Render(strings.Repeat("─", mid)) +
 		center.Render("┬") +
 		center.Render(strings.Repeat("─", m.width-mid-1))
@@ -204,9 +204,9 @@ func (m Model) renderDividerSplit() string {
 // renderTabsDivider renders pane dividers with active-tab highlight segments.
 func (m Model) renderTabsDivider() string {
 	mid := m.width / 2
-	dim := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
-	reqTabLine := lipgloss.NewStyle().Foreground(theme.Current.RequestPaneLabel)
-	resTabLine := lipgloss.NewStyle().Foreground(theme.Current.ResponsePaneLabel)
+	dim := lipgloss.NewStyle().Foreground(m.theme.TextDim)
+	reqTabLine := lipgloss.NewStyle().Foreground(m.theme.RequestPaneLabel)
+	resTabLine := lipgloss.NewStyle().Foreground(m.theme.ResponsePaneLabel)
 
 	leftStart, leftWidth := m.tab().requestPane.ActiveTabSpan()
 	rightStart, rightWidth := m.tab().responsePane.ActiveTabSpan()
@@ -240,17 +240,17 @@ func (m Model) renderRequestTabs() string {
 		if i == m.activeTab {
 			method := t.urlbar.Method()
 			activeStyle := lipgloss.NewStyle().
-				Background(theme.MethodColor(method)).
+				Background(m.theme.MethodColor(method)).
 				Foreground(lipgloss.Color("#111111")).
 				Bold(true).
 				Padding(0, 1)
 			sb.WriteString(activeStyle.Render(title))
 		} else {
 			method := t.urlbar.Method()
-			nameStyle := lipgloss.NewStyle().Foreground(theme.Current.TabsInactiveText)
+			nameStyle := lipgloss.NewStyle().Foreground(m.theme.TabsInactiveText)
 			sb.WriteString(" ")
 			if method != "" && strings.HasPrefix(title, method+" ") {
-				methodStyle := lipgloss.NewStyle().Foreground(theme.MethodColor(method))
+				methodStyle := lipgloss.NewStyle().Foreground(m.theme.MethodColor(method))
 				sb.WriteString(methodStyle.Render(method))
 				sb.WriteString(nameStyle.Render(" " + title[len(method)+1:]))
 			} else {
@@ -265,7 +265,7 @@ func (m Model) renderRequestTabs() string {
 
 // renderTabsRow renders both pane tab strips separated by a vertical divider.
 func (m Model) renderTabsRow() string {
-	divider := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
+	divider := lipgloss.NewStyle().Foreground(m.theme.TextDim)
 	return m.tab().requestPane.TabsView().Content + divider.Render("│") + m.tab().responsePane.TabsView().Content
 }
 
@@ -274,16 +274,16 @@ func (m Model) renderPaneLabels() string {
 	mid := m.width / 2
 	rightWidth := m.width - mid - 1
 
-	leftLabelStyle := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
-	rightLabelStyle := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
+	leftLabelStyle := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
+	rightLabelStyle := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
 	if m.focus == focusRequestPane {
-		leftLabelStyle = lipgloss.NewStyle().Foreground(theme.Current.RequestPaneLabel).Bold(true)
+		leftLabelStyle = lipgloss.NewStyle().Foreground(m.theme.RequestPaneLabel).Bold(true)
 	}
 	if m.focus == focusResponsePane {
-		rightLabelStyle = lipgloss.NewStyle().Foreground(theme.Current.ResponsePaneLabel).Bold(true)
+		rightLabelStyle = lipgloss.NewStyle().Foreground(m.theme.ResponsePaneLabel).Bold(true)
 	}
 
-	divider := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
+	divider := lipgloss.NewStyle().Foreground(m.theme.TextDim)
 	left := fitToWidth([]string{" " + leftLabelStyle.Render("request")}, mid)[0]
 	right := fitToWidth([]string{" " + rightLabelStyle.Render("response")}, rightWidth)[0]
 	return left + divider.Render("│") + right
@@ -294,7 +294,7 @@ func (m Model) renderContentLines() []string {
 	contentHeight := m.contentHeight()
 	mid := m.width / 2
 	rightWidth := m.width - mid - 1
-	divider := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
+	divider := lipgloss.NewStyle().Foreground(m.theme.TextDim)
 
 	leftLines := splitAndFit(m.tab().requestPane.View().Content, mid)
 	rightLines := splitAndFit(m.tab().responsePane.View().Content, rightWidth)
@@ -332,9 +332,9 @@ func fitToWidth(lines []string, width int) []string {
 }
 
 // overlayAtCenter composites overlay centered over a dimmed base canvas.
-func overlayAtCenter(base, overlay string, width, height int) string {
+func overlayAtCenter(base, overlay string, width, height int, t theme.Theme) string {
 	dimStyle := lipgloss.NewStyle().
-		Foreground(theme.Current.TextMuted).
+		Foreground(t.TextMuted).
 		Faint(true)
 
 	canvas := lipgloss.Place(width, height, lipgloss.Left, lipgloss.Top, base)

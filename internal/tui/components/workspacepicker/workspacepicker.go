@@ -25,24 +25,35 @@ type Model struct {
 	filtered []item
 	cursor   int
 	width    int
+	theme    theme.Theme
 }
 
 // New returns an initialized picker with no items.
 func New() Model {
+	t := theme.Current
 	ti := textinput.New()
 	ti.Placeholder = "search collections…"
 	ti.CharLimit = 128
 	styles := ti.Styles()
-	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(theme.Current.TextAccent)
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(t.TextAccent)
 	ti.SetStyles(styles)
 	ti.Focus()
 
 	m := Model{
 		input: ti,
 		width: 50,
+		theme: t,
 	}
 	m.refilter()
 	return m
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
+	styles := m.input.Styles()
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(t.TextAccent)
+	m.input.SetStyles(styles)
 }
 
 // Load replaces the list with absolute collection directory paths.
@@ -118,7 +129,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 // View renders search input and the filtered list.
 func (m Model) View() tea.View {
 	divider := lipgloss.NewStyle().
-		Foreground(theme.Current.DividerBorder).
+		Foreground(m.theme.DividerBorder).
 		Render(strings.Repeat("─", m.width))
 
 	var rows []string
@@ -129,17 +140,17 @@ func (m Model) View() tea.View {
 
 	for i, it := range visible {
 		prefix := "  "
-		lineStyle := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
+		lineStyle := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
 		if i == m.cursor {
-			prefix = lipgloss.NewStyle().Foreground(theme.Current.TextAccent).Render("▶ ")
-			lineStyle = lipgloss.NewStyle().Foreground(theme.Current.TextAccent)
+			prefix = lipgloss.NewStyle().Foreground(m.theme.TextAccent).Render("▶ ")
+			lineStyle = lipgloss.NewStyle().Foreground(m.theme.TextAccent)
 		}
 		rows = append(rows, prefix+lineStyle.Render(it.name))
 	}
 
 	if len(rows) == 0 {
 		rows = []string{
-			lipgloss.NewStyle().Foreground(theme.Current.TextMuted).Render("  no results"),
+			lipgloss.NewStyle().Foreground(m.theme.TextMuted).Render("  no results"),
 		}
 	}
 

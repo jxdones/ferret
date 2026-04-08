@@ -24,6 +24,7 @@ type Model struct {
 
 	// activeForeground styles the active tab when focused. If nil, TextAccent is used.
 	activeForeground color.Color
+	theme            theme.Theme
 }
 
 // New initializes a tabs model with the given labels. The first tab is active
@@ -32,7 +33,13 @@ func New(labels []string) Model {
 	return Model{
 		labels: labels,
 		width:  common.ClampMin(len(labels)*tabSlotWidth, minTabsWidth),
+		theme:  theme.Current,
 	}
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
 }
 
 // SetSize sets the width of the tabs model.
@@ -118,15 +125,15 @@ func (m Model) ActiveSpan() (startColumn, activeWidth int) {
 func (m Model) View() tea.View {
 	var activeStyle, inactiveStyle lipgloss.Style
 	if m.focused {
-		activeFG := theme.Current.TextAccent
+		activeFG := m.theme.TextAccent
 		if m.activeForeground != nil {
 			activeFG = m.activeForeground
 		}
 		activeStyle = lipgloss.NewStyle().Foreground(activeFG).Bold(true)
-		inactiveStyle = lipgloss.NewStyle().Foreground(theme.Current.TabsInactiveText)
+		inactiveStyle = lipgloss.NewStyle().Foreground(m.theme.TabsInactiveText)
 	} else {
-		activeStyle = lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-		inactiveStyle = lipgloss.NewStyle().Foreground(theme.Current.TextDim)
+		activeStyle = lipgloss.NewStyle().Foreground(m.theme.TextMuted)
+		inactiveStyle = lipgloss.NewStyle().Foreground(m.theme.TextDim)
 	}
 
 	var sb strings.Builder

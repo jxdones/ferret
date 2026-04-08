@@ -28,24 +28,35 @@ type Model struct {
 	filtered []item
 	cursor   int
 	width    int
+	theme    theme.Theme
 }
 
 // New returns an initialized collection model with no items.
 func New() Model {
+	t := theme.Current
 	ti := textinput.New()
 	ti.Placeholder = "search requests…"
 	ti.CharLimit = 128
 	styles := ti.Styles()
-	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(theme.Current.TextAccent)
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(t.TextAccent)
 	ti.SetStyles(styles)
 	ti.Focus()
 
 	m := Model{
 		input: ti,
 		width: 50,
+		theme: t,
 	}
 	m.refilter()
 	return m
+}
+
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
+	styles := m.input.Styles()
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(t.TextAccent)
+	m.input.SetStyles(styles)
 }
 
 // Load replaces the item list with entries from a loaded collection.
@@ -113,7 +124,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 // View renders the input and filtered result list.
 func (m Model) View() tea.View {
 	divider := lipgloss.NewStyle().
-		Foreground(theme.Current.DividerBorder).
+		Foreground(m.theme.DividerBorder).
 		Render(strings.Repeat("─", m.width))
 
 	var rows []string
@@ -124,19 +135,19 @@ func (m Model) View() tea.View {
 
 	for i, it := range visible {
 		prefix := "  "
-		titleStyle := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
+		titleStyle := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
 		if i == m.cursor {
-			prefix = lipgloss.NewStyle().Foreground(theme.Current.TextAccent).Render("▶ ")
-			titleStyle = lipgloss.NewStyle().Foreground(theme.Current.TextAccent)
+			prefix = lipgloss.NewStyle().Foreground(m.theme.TextAccent).Render("▶ ")
+			titleStyle = lipgloss.NewStyle().Foreground(m.theme.TextAccent)
 		}
-		method := methodStyle(it.method).Render(fmt.Sprintf("%-7s", it.method))
+		method := m.methodStyle(it.method).Render(fmt.Sprintf("%-7s", it.method))
 		title := titleStyle.Render(it.title)
 		rows = append(rows, prefix+method+title)
 	}
 
 	if len(rows) == 0 {
 		rows = []string{
-			lipgloss.NewStyle().Foreground(theme.Current.TextMuted).Render("  no results"),
+			lipgloss.NewStyle().Foreground(m.theme.TextMuted).Render("  no results"),
 		}
 	}
 
@@ -164,6 +175,6 @@ func (m *Model) refilter() {
 }
 
 // methodStyle returns a method-colored style for request method labels.
-func methodStyle(method string) lipgloss.Style {
-	return lipgloss.NewStyle().Bold(true).Foreground(theme.MethodColor(method))
+func (m Model) methodStyle(method string) lipgloss.Style {
+	return lipgloss.NewStyle().Bold(true).Foreground(m.theme.MethodColor(method))
 }

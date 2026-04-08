@@ -58,33 +58,46 @@ type Model struct {
 
 	focused   bool
 	inserting bool
+	theme     theme.Theme
 }
 
 // New creates a new headers model.
 func New() Model {
+	t := theme.Current
 	m := Model{
 		items:  nil,
 		width:  40,
 		cursor: 0,
+		theme:  t,
 	}
-	m.nameInput = newInput("Name")
-	m.valueInput = newInput("Value")
+	m.nameInput = newInput("Name", t)
+	m.valueInput = newInput("Value", t)
 	m.applyInputFocus()
 	return m
 }
 
+// SetTheme updates the theme used for rendering.
+func (m *Model) SetTheme(t theme.Theme) {
+	m.theme = t
+	applyInputTheme(&m.nameInput, t)
+	applyInputTheme(&m.valueInput, t)
+}
+
 // newInput creates a new textinput model with the given placeholder.
-func newInput(placeholder string) textinput.Model {
+func newInput(placeholder string, t theme.Theme) textinput.Model {
 	ti := textinput.New()
 	ti.Placeholder = placeholder
 	ti.CharLimit = 256
-
-	styles := ti.Styles()
-	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(theme.Current.TextAccent)
-	styles.Blurred.Prompt = styles.Blurred.Prompt.Foreground(theme.Current.TextDim)
-	ti.SetStyles(styles)
-
+	applyInputTheme(&ti, t)
 	return ti
+}
+
+// applyInputTheme sets the themed prompt colors on a textinput.
+func applyInputTheme(ti *textinput.Model, t theme.Theme) {
+	styles := ti.Styles()
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(t.TextAccent)
+	styles.Blurred.Prompt = styles.Blurred.Prompt.Foreground(t.TextDim)
+	ti.SetStyles(styles)
 }
 
 // SetSize sets the width of the headers model.
@@ -157,13 +170,13 @@ type Row struct {
 
 // ReadOnlyView renders a Name/Value table without editing chrome, matching the
 // layout of Model.View (column titles, dividers, aligned rows).
-func ReadOnlyView(width int, rows []Row) tea.View {
+func ReadOnlyView(width int, rows []Row, t theme.Theme) tea.View {
 	width = max(minHeaderRowWidth, width)
 	nameW, valW := columnWidthsFor(width)
-	accent := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
-	dim := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
-	bodyName := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
-	bodyValue := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
+	accent := lipgloss.NewStyle().Foreground(t.TextPrimary)
+	dim := lipgloss.NewStyle().Foreground(t.TextDim)
+	bodyName := lipgloss.NewStyle().Foreground(t.TextPrimary)
+	bodyValue := lipgloss.NewStyle().Foreground(t.TextPrimary)
 	divider := dim.Render(strings.Repeat("─", width))
 
 	var lines []string
@@ -185,13 +198,13 @@ func ReadOnlyView(width int, rows []Row) tea.View {
 // View renders the headers table as a multi-line string padded to m.width.
 func (m Model) View() tea.View {
 	nameColumnWidth, valueColumnWidth := m.columnWidths()
-	accent := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
-	muted := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-	dim := lipgloss.NewStyle().Foreground(theme.Current.TextDim)
-	bodyNameOff := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-	bodyValueOff := lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-	bodyNameSel := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
-	bodyValueSel := lipgloss.NewStyle().Foreground(theme.Current.TextPrimary)
+	accent := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
+	muted := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
+	dim := lipgloss.NewStyle().Foreground(m.theme.TextDim)
+	bodyNameOff := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
+	bodyValueOff := lipgloss.NewStyle().Foreground(m.theme.TextMuted)
+	bodyNameSel := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
+	bodyValueSel := lipgloss.NewStyle().Foreground(m.theme.TextPrimary)
 	divider := dim.Render(strings.Repeat("─", m.width))
 
 	var lines []string
@@ -239,7 +252,7 @@ func (m Model) View() tea.View {
 		lines = append(lines, " "+nameView+" "+valueView)
 	} else {
 		hint := lipgloss.NewStyle().
-			Foreground(theme.Current.TextMuted).
+			Foreground(m.theme.TextMuted).
 			Render("  i/I/A add · d delete row · tab/shift+tab fields")
 		if !hasBody {
 			lines = append(lines, divider)

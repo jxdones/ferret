@@ -16,15 +16,15 @@ const (
 
 // RenderShortcuts renders a compact shortcuts bar for the given width and
 // bindings.
-func RenderShortcuts(width int, bindings []key.Binding) string {
+func RenderShortcuts(width int, bindings []key.Binding, t theme.Theme) string {
 	contentWidth := max(minContentWidth, width-horizontalPaddingColumns)
 
 	h := help.New()
 	h.SetWidth(contentWidth)
-	h.Styles.ShortKey = lipgloss.NewStyle().Foreground(theme.Current.TextAccent)
-	h.Styles.ShortDesc = lipgloss.NewStyle().Foreground(theme.Current.TextMuted)
-	h.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(theme.Current.DividerBorder)
-	h.Styles.Ellipsis = lipgloss.NewStyle().Foreground(theme.Current.DividerBorder)
+	h.Styles.ShortKey = lipgloss.NewStyle().Foreground(t.TextAccent)
+	h.Styles.ShortDesc = lipgloss.NewStyle().Foreground(t.TextMuted)
+	h.Styles.ShortSeparator = lipgloss.NewStyle().Foreground(t.DividerBorder)
+	h.Styles.Ellipsis = lipgloss.NewStyle().Foreground(t.DividerBorder)
 
 	return ansi.Truncate(h.ShortHelpView(bindings), contentWidth, "…")
 }

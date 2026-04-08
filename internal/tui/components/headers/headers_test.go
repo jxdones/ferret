@@ -240,7 +240,7 @@ func TestReadOnlyView_Layout(t *testing.T) {
 	tuitest.UseStableTheme(t)
 	out := tuitest.StripANSI(ReadOnlyView(50, []Row{
 		{Name: "Content-Type", Value: "application/json"},
-	}).Content)
+	}, tuitest.StableTestTheme()).Content)
 	for _, sub := range []string{"Name", "Value", "Content-Type", "application/json"} {
 		if !strings.Contains(out, sub) {
 			t.Fatalf("ReadOnlyView missing %q in:\n%s", sub, out)
