@@ -10,7 +10,7 @@ import (
 	"github.com/jxdones/ferret/internal/exec"
 )
 
-func TestCharacterization_BodyPagingAndClamping(t *testing.T) {
+func TestBodyTab_PagingAndClamping(t *testing.T) {
 	m := New()
 	m.SetSize(80, 10)
 	m.SetFocused(true)
@@ -47,7 +47,7 @@ func TestCharacterization_BodyPagingAndClamping(t *testing.T) {
 	}
 }
 
-func TestCharacterization_HeadersPagingAndClamping(t *testing.T) {
+func TestHeadersTab_PagingAndClamping(t *testing.T) {
 	m := New()
 	m.SetSize(80, 10)
 	m.SetFocused(true)
@@ -137,7 +137,7 @@ func TestKeys_FullHelp_HasJumpBindings(t *testing.T) {
 	}
 }
 
-func TestCharacterization_HorizontalScrollingAndClamping(t *testing.T) {
+func TestBodyTab_HorizontalScrollAndClamping(t *testing.T) {
 	m := New()
 	m.SetSize(80, 10)
 	m.SetFocused(true)
@@ -182,7 +182,7 @@ func TestCharacterization_HorizontalScrollingAndClamping(t *testing.T) {
 	}
 }
 
-func TestCharacterization_HorizontalOffsetResetsOnSetResponse(t *testing.T) {
+func TestBodyTab_HorizontalOffsetResetsOnSetResponse(t *testing.T) {
 	m := New()
 	m.SetSize(80, 10)
 	m.SetFocused(true)
