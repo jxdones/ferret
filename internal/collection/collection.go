@@ -55,12 +55,12 @@ type Auth struct {
 func LoadRequest(path string) (Request, error) {
 	yamlFile, err := os.ReadFile(path)
 	if err != nil {
-		return Request{}, fmt.Errorf("collection: read %s: %w", path, err)
+		return Request{}, fmt.Errorf("collection: read %s: %w", shortFilePath(path), err)
 	}
 	var request Request
 	err = yaml.Unmarshal(yamlFile, &request)
 	if err != nil {
-		return Request{}, fmt.Errorf("collection: parse %s: %w", path, err)
+		return Request{}, fmt.Errorf("collection: parse %s: %w", shortFilePath(path), err)
 	}
 	return request, nil
 }
@@ -69,15 +69,15 @@ func LoadRequest(path string) (Request, error) {
 func SaveRequest(path string, request Request) error {
 	err := os.MkdirAll(filepath.Dir(path), 0o700)
 	if err != nil {
-		return fmt.Errorf("collection: create directory for %s: %w", path, err)
+		return fmt.Errorf("collection: create directory for %s: %w", shortFilePath(path), err)
 	}
 	data, err := yaml.Marshal(request)
 	if err != nil {
-		return fmt.Errorf("collection: marshal request for %s: %w", path, err)
+		return fmt.Errorf("collection: marshal %s: %w", shortFilePath(path), err)
 	}
 	err = os.WriteFile(path, data, 0o600)
 	if err != nil {
-		return fmt.Errorf("collection: write request to %s: %w", path, err)
+		return fmt.Errorf("collection: write %s: %w", shortFilePath(path), err)
 	}
 	return nil
 }
@@ -92,13 +92,13 @@ func DiscoverCollections(dir string) ([]string, error) {
 	dir = filepath.Clean(dir)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("collection: discover collections in %s: %w", dir, err)
+		return nil, fmt.Errorf("collection: could not read workspace: %w", err)
 	}
 
 	collections := map[string]struct{}{}
 
 	if ok, err := hasFerretYAML(dir); err != nil {
-		return nil, fmt.Errorf("collection: discover collections in %s: %w", dir, err)
+		return nil, fmt.Errorf("collection: could not read workspace: %w", err)
 	} else if ok {
 		collections[dir] = struct{}{}
 	}
@@ -110,7 +110,7 @@ func DiscoverCollections(dir string) ([]string, error) {
 		sub := filepath.Join(dir, ent.Name())
 		ok, err := hasFerretYAML(sub)
 		if err != nil {
-			return nil, fmt.Errorf("collection: discover collections in %s: %w", dir, err)
+			return nil, fmt.Errorf("collection: could not read workspace: %w", err)
 		}
 		if ok {
 			collections[sub] = struct{}{}
@@ -151,13 +151,13 @@ func LoadConfig(dir string) (Config, error) {
 		if err == nil {
 			var cfg Config
 			if err := yaml.Unmarshal(data, &cfg); err != nil {
-				return Config{}, fmt.Errorf("collection: parse %s: %w", path, err)
+				return Config{}, fmt.Errorf("collection: parse .ferret.yaml: %w", err)
 			}
 			return cfg, nil
 		}
 		parent := filepath.Dir(current)
 		if parent == current {
-			return Config{}, fmt.Errorf("collection: no .ferret.yaml found in %s or any parent", dir)
+			return Config{}, fmt.Errorf("collection: no .ferret.yaml found in current directory or any parent")
 		}
 		current = parent
 	}
@@ -170,7 +170,7 @@ func LoadEntries(dir string) ([]Entry, error) {
 	requestsDir := filepath.Join(dir, "requests")
 	_, err := os.Stat(requestsDir)
 	if err != nil {
-		return nil, fmt.Errorf("collection: missing requests directory in %s: %w", dir, err)
+		return nil, fmt.Errorf("collection: missing requests/ directory: %w", err)
 	}
 
 	err = filepath.WalkDir(requestsDir, func(path string, d fs.DirEntry, err error) error {
@@ -189,17 +189,17 @@ func LoadEntries(dir string) ([]Entry, error) {
 
 		data, err := os.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("collection: read %s: %w", path, err)
+			return fmt.Errorf("collection: read %s: %w", shortFilePath(path), err)
 		}
 
 		var request Request
 		if err := yaml.Unmarshal(data, &request); err != nil {
-			return fmt.Errorf("collection: parse %s: %w", path, err)
+			return fmt.Errorf("collection: parse %s: %w", shortFilePath(path), err)
 		}
 
 		rel, err := filepath.Rel(requestsDir, path)
 		if err != nil {
-			return fmt.Errorf("collection: get relative path for %s: %w", path, err)
+			return fmt.Errorf("collection: get relative path for %s: %w", shortFilePath(path), err)
 		}
 
 		entries = append(entries, Entry{Path: rel, Request: request})
@@ -210,4 +210,15 @@ func LoadEntries(dir string) ([]Entry, error) {
 	}
 
 	return entries, nil
+}
+
+// shortFilePath returns a short, user-facing path for error messages.
+// Direct children of requests/ use the collection name as prefix.
+// Nested files use their immediate parent directory as prefix.
+func shortFilePath(path string) string {
+	parent := filepath.Base(filepath.Dir(path))
+	if parent == "requests" {
+		return filepath.Base(filepath.Dir(filepath.Dir(path))) + "/" + filepath.Base(path)
+	}
+	return parent + "/" + filepath.Base(path)
 }

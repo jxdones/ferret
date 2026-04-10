@@ -114,12 +114,12 @@ func Load(dir, name string) (*Env, error) {
 	path := filepath.Join(dir, "environments", name+".yaml")
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("env: read %s: %w", path, err)
+		return nil, fmt.Errorf("env: read %s: %w", shortFilePath(path), err)
 	}
 
 	var file map[string]string
 	if err := yaml.Unmarshal(data, &file); err != nil {
-		return nil, fmt.Errorf("env: parse %s: %w", path, err)
+		return nil, fmt.Errorf("env: parse %s: %w", shortFilePath(path), err)
 	}
 
 	return &Env{
@@ -169,11 +169,11 @@ func LoadMerged(dirs []string, name string) (*Env, bool, error) {
 			if os.IsNotExist(err) {
 				continue
 			}
-			return nil, false, fmt.Errorf("env: read %s: %w", path, err)
+			return nil, false, fmt.Errorf("env: read %s: %w", shortFilePath(path), err)
 		}
 		var file map[string]string
 		if err := yaml.Unmarshal(data, &file); err != nil {
-			return nil, false, fmt.Errorf("env: parse %s: %w", path, err)
+			return nil, false, fmt.Errorf("env: parse %s: %w", shortFilePath(path), err)
 		}
 		found = true
 		for k, v := range file {
@@ -241,8 +241,18 @@ func ListNames(dir string) ([]string, error) {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("env: list in %s: %w", envDir, err)
+		return nil, fmt.Errorf("env: could not list environments: %w", err)
 	}
 	sort.Strings(names)
 	return names, nil
+}
+
+// shortFilePath returns a short, user-facing path for error messages.
+// Direct children of environments/ use the collection name as prefix.
+func shortFilePath(path string) string {
+	parent := filepath.Base(filepath.Dir(path))
+	if parent == "environments" {
+		return filepath.Base(filepath.Dir(filepath.Dir(path))) + "/" + filepath.Base(path)
+	}
+	return parent + "/" + filepath.Base(path)
 }

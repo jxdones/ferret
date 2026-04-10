@@ -498,3 +498,25 @@ func TestResolveStartEnv(t *testing.T) {
 		}
 	})
 }
+
+func TestShortFilePath(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "direct_child_of_environments_uses_collection_name",
+			path: filepath.Join("workspace", "pokeapi", "environments", "dev.yaml"),
+			want: "pokeapi/dev.yaml",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shortFilePath(tt.path)
+			if got != tt.want {
+				t.Fatalf("shortFilePath(%q) = %q, want %q", tt.path, got, tt.want)
+			}
+		})
+	}
+}

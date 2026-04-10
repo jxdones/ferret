@@ -305,3 +305,30 @@ func TestLoadEntries_WhenRequestsDirMissing_ReturnsError(t *testing.T) {
 		})
 	}
 }
+
+func TestShortFilePath(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "direct_child_of_requests_uses_collection_name",
+			path: filepath.Join("workspace", "pokeapi", "requests", "list.yaml"),
+			want: "pokeapi/list.yaml",
+		},
+		{
+			name: "nested_under_subdir_uses_parent_dir",
+			path: filepath.Join("workspace", "pokeapi", "requests", "users", "list.yaml"),
+			want: "users/list.yaml",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shortFilePath(tt.path)
+			if got != tt.want {
+				t.Fatalf("shortFilePath(%q) = %q, want %q", tt.path, got, tt.want)
+			}
+		})
+	}
+}

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Sanitized filesystem paths in error messages.** Errors from `collection` and `env` no longer expose full absolute paths (which leak usernames and directory layout). File errors now show a short `collection/file.yaml` style identifier: direct children of `requests/` or `environments/` use the collection name as prefix (e.g. `pokeapi/list.yaml`), nested files use their immediate parent directory (e.g. `users/list.yaml`). Directory-level errors use generic messages.
+
 ## [0.2.6] - 2026-04-07
 
 ### Fixed
