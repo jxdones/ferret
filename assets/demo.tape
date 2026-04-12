@@ -9,6 +9,7 @@ Set Height 800
 Set WindowBar Rings
 Set Padding 10
 Set BorderRadius 10
+Set Theme {"name":"Harbor","black":"#1e3040","red":"#ff3333","green":"#00ff87","yellow":"#ffd75f","blue":"#5fd7ff","magenta":"#ff2d78","cyan":"#00ffcc","white":"#ddeeff","brightBlack":"#1e3040","brightRed":"#ff3333","brightGreen":"#00ff87","brightYellow":"#ffd75f","brightBlue":"#5fd7ff","brightMagenta":"#ff2d78","brightCyan":"#00ffcc","brightWhite":"#ffffff","background":"#090c12","foreground":"#ddeeff","selection":"#1a2a3a","cursor":"#ddeeff"}
 
 Type "ferret"
 Sleep 600ms

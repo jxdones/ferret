@@ -184,6 +184,23 @@ func TestEverforestTheme_HasNonNilColors(t *testing.T) {
 	}
 }
 
+func TestHarborTheme_HasNonNilColors(t *testing.T) {
+	th := HarborTheme()
+	for _, c := range themeColors(th) {
+		t.Run(c.name, func(t *testing.T) {
+			if c.c == nil {
+				t.Fatalf("HarborTheme().%s is nil", c.name)
+			}
+		})
+	}
+}
+
+func TestHarborTheme_HasBackground(t *testing.T) {
+	if HarborTheme().Background == nil {
+		t.Fatal("HarborTheme().Background is nil, expected a non-nil background color")
+	}
+}
+
 func TestThemeByName(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -239,6 +256,16 @@ func TestThemeByName(t *testing.T) {
 			name:      "everforest",
 			input:     "everforest",
 			wantTheme: EverforestTheme(),
+		},
+		{
+			name:      "harbor",
+			input:     "harbor",
+			wantTheme: HarborTheme(),
+		},
+		{
+			name:      "harbor_uppercase",
+			input:     "HARBOR",
+			wantTheme: HarborTheme(),
 		},
 	}
 

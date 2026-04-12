@@ -23,6 +23,9 @@ import (
 func (m Model) View() tea.View {
 	v := tea.NewView(m.render())
 	v.AltScreen = true
+	if m.theme.Background != nil {
+		v.BackgroundColor = m.theme.Background
+	}
 	return v
 }
 

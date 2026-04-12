@@ -10,6 +10,11 @@ import (
 
 // Theme defines a set of colors for the ferret UI.
 type Theme struct {
+	// Background is the full-screen background color. When nil the terminal's
+	// own background is used (transparent), which is the default for all
+	// built-in themes.
+	Background color.Color
+
 	DividerBorder color.Color
 
 	TextMuted      color.Color
@@ -82,6 +87,8 @@ func ThemeByName(name string) Theme {
 		return SolarizedTheme()
 	case "everforest":
 		return EverforestTheme()
+	case "harbor":
+		return HarborTheme()
 	default:
 		return DefaultTheme()
 	}
@@ -448,5 +455,57 @@ func DefaultTheme() Theme {
 		TitleBarEntry:      cc("#ff9500", "208", "3"),
 
 		RequestCancel: cc("#ff5f87", "204", "1"),
+	}
+}
+
+// HarborTheme is a dark-navy theme with vivid teal, hot-pink, and green accents.
+// Created specially for ferret.
+func HarborTheme() Theme {
+	bg := cc("#090c12", "232", "0")
+	return Theme{
+		Background: bg,
+
+		DividerBorder: cc("#1e3040", "236", "8"),
+
+		TextMuted:      cc("#5a7a9a", "243", "8"),
+		TextDim:        cc("#1a2a3a", "235", "8"),
+		TextPrimary:    cc("#ddeeff", "195", "7"),
+		TextAccent:     cc("#00ffcc", "51", "6"),
+		SyntaxKeyword:  cc("#00ffcc", "51", "6"),
+		SyntaxString:   cc("#5fd7ff", "81", "14"),
+		SyntaxNumber:   cc("#ffd75f", "221", "3"),
+		SyntaxComment:  cc("#3a5060", "238", "8"),
+		SyntaxOperator: cc("#7a9aaa", "246", "7"),
+
+		MethodGET:    cc("#00ff87", "48", "2"),
+		MethodPOST:   cc("#ff2d78", "197", "13"),
+		MethodPUT:    cc("#ffd75f", "221", "11"),
+		MethodDELETE: cc("#ff3333", "196", "1"),
+		MethodPATCH:  cc("#ff9500", "208", "3"),
+
+		TabsActiveText:   cc("#ffffff", "231", "15"),
+		TabsInactiveText: cc("#5a7a9a", "243", "7"),
+
+		StatusInfo:    cc("#ffffff", "231", "15"),
+		StatusSuccess: cc("#00ff87", "48", "2"),
+		StatusWarning: cc("#ffd75f", "221", "3"),
+		StatusError:   cc("#ff3333", "196", "1"),
+		StatusHook:    cc("#bf87ff", "141", "5"),
+
+		StatusCodeOK:    cc("#00ff87", "48", "2"),
+		StatusCodeError: cc("#ff3333", "196", "1"),
+
+		OverlayBorder: cc("#1e3040", "236", "8"),
+		OverlayFooter: cc("#5a7a9a", "243", "7"),
+
+		RequestPaneLabel:  cc("#00ffcc", "51", "6"),
+		ResponsePaneLabel: cc("#ff2d78", "197", "13"),
+
+		TitleBarWorkspace:  cc("#00ffcc", "51", "6"),
+		TitleBarCollection: cc("#5fd7ff", "81", "14"),
+		TitleBarSeparator:  cc("#1e3040", "236", "8"),
+		TitleBarEntry:      cc("#ff9500", "208", "3"),
+
+		RequestCancel: cc("#ff3333", "196", "1"),
 	}
 }

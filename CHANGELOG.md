@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Harbor theme.** A new built-in theme with a dark-navy canvas, vivid teal accents, hot-pink POST highlights, and sharp green GET/success colors. Set `theme: harbor` in `~/.config/ferret/config.yaml` to enable it. Harbor is the first theme to use the new `Background` field, which sets the terminal's background color via `tea.View.BackgroundColor` so the canvas color is consistent regardless of the terminal's own default.
+
+- **Theme background color support.** The `Theme` struct now has an optional `Background` field. When set, ferret passes it to bubbletea's `View.BackgroundColor`, painting the terminal's actual background rather than relying on the terminal default. Existing themes leave `Background` nil and are unaffected.
+
 ## [0.2.7] - 2026-04-12
 
 ### Added

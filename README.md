@@ -7,6 +7,8 @@
 
   <p>
     <img src="assets/ferret.gif" alt="Ferret demo" width="830"/>
+    <br/>
+    <sub>Using ferret's own <a href="#themes">harbor</a> theme</sub>
   </p>
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
