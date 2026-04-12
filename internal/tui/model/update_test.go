@@ -479,6 +479,24 @@ func TestCloseTab(t *testing.T) {
 	}
 }
 
+func TestCloseOnlyTab(t *testing.T) {
+	m := newTestModel(t)
+	m.tabs[0].urlbar.SetURL("https://example.com")
+	m.tabs[0].urlbar.SetMethod("POST")
+
+	oldURL := m.tabs[0].urlbar.URL()
+	oldMethod := m.tabs[0].urlbar.Method()
+	m.closeTab()
+
+	if oldURL == m.tabs[0].urlbar.URL() {
+		t.Fatal("url should be different than", oldURL)
+	}
+
+	if oldMethod == m.tabs[0].urlbar.Method() {
+		t.Fatal("method should be different than", oldMethod)
+	}
+}
+
 func TestSwitchTab_StatusbarSync(t *testing.T) {
 	tests := []struct {
 		name    string

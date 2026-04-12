@@ -223,12 +223,17 @@ func (m *Model) newTab() tea.Cmd {
 
 // closeTab removes the active tab. Does nothing if only one tab is open.
 func (m *Model) closeTab() tea.Cmd {
-	if len(m.tabs) <= 1 {
-		return nil
-	}
 	if t := m.tabs[m.activeTab]; t.cancel != nil {
 		t.cancel()
 	}
+
+	// when closing the last available tab, create a new one
+	if len(m.tabs) == 1 {
+		m.tabs = m.tabs[:0]
+		m.activeTab = 0
+		return m.newTab()
+	}
+
 	m.tabs = append(m.tabs[:m.activeTab], m.tabs[m.activeTab+1:]...)
 	if m.activeTab >= len(m.tabs) {
 		m.activeTab = len(m.tabs) - 1

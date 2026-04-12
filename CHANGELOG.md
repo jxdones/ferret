@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-04-12
+
 ### Added
+
+- **Closing the last tab opens a fresh one.** Pressing the close-tab key when only one tab is open no longer blocks. The existing tab is replaced with a brand-new empty request tab, the same state as when ferret first launches.
 
 - **Auth tab in the request pane.** The `auth` tab now renders a live editor for the active request's auth configuration. Supports `bearer`, `basic`, `api key` (header or query), and `none`. The auth type is selected with `h`/`l`, fields are navigated with `j`/`k`, and edited with `i` or `enter`. Loading a request from the collection picker populates the auth tab from the request's `auth` field, inheriting from `.ferret.yaml` when the request does not override it.
 
