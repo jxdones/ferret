@@ -48,11 +48,16 @@ func (m Model) handleCollectionModalKey(msg tea.KeyPressMsg) (Model, tea.Cmd) {
 		m.collection.MoveCursor(1)
 	case "enter":
 		if entry, ok := m.collection.Selected(); ok {
+			var collectionAuth *collectiondata.Auth
+			if cfg, err := collectiondata.LoadConfig(m.tab().collectionRoot); err == nil {
+				collectionAuth = cfg.Auth
+			}
 			m.tab().urlbar.SetMethod(entry.Request.Method)
 			m.tab().urlbar.SetURL(entry.Request.URL)
 			m.tab().requestPane.SetURL(entry.Request.URL)
 			m.tab().requestPane.SetHeaders(entry.Request.Headers)
 			m.tab().requestPane.SetBody(entry.Request.Body)
+			m.tab().requestPane.SetAuth(entry.Request.Auth, collectionAuth)
 			m.tab().requestPane.ResetBodyFocus()
 			m.tab().responsePane.Reset()
 			m.tab().loadedAuth = entry.Request.Auth

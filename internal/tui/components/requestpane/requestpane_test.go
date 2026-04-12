@@ -379,7 +379,7 @@ func TestKeys_ShortHelp(t *testing.T) {
 		wantDesc string
 	}{
 		{name: "tab_navigation", wantKey: "]/[", wantDesc: "next/prev tab"},
-		{name: "navigate", wantKey: "j/k", wantDesc: "navigate"},
+		{name: "navigate", wantKey: "h/j/k/l", wantDesc: "navigate"},
 		{name: "insert_edit", wantKey: "i", wantDesc: "insert / edit"},
 	}
 	for _, tt := range tests {
@@ -410,7 +410,7 @@ func TestKeys_FullHelp_HasBodyEditorBindings(t *testing.T) {
 		{name: "exit_editor", wantKey: "esc", wantDesc: "exit editor"},
 		{name: "clear_body", wantKey: "ctrl+l", wantDesc: "clear body"},
 		{name: "cycle_body_type", wantKey: "h/l", wantDesc: "cycle body type"},
-		{name: "navigate_rows", wantKey: "j/k", wantDesc: "navigate"},
+		{name: "navigate_rows", wantKey: "h/j/k/l", wantDesc: "navigate"},
 	}
 	var full []key.Binding
 	for _, g := range Keys.FullHelp() {

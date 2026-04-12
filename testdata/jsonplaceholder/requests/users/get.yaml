@@ -1,3 +1,6 @@
 name: get users
 method: GET
 url: "{{jsonplaceholder_base_url}}/users/1"
+auth:
+  type: bearer
+  token: "xZEeabG2ZGWrHSHUod9PXzv7RGpQUhjMiCldZl9Gk4bTB86AkPg0OoB426Frp8ts" # random token

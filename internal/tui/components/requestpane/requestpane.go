@@ -8,7 +8,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/jxdones/ferret/internal/collection"
 	"github.com/jxdones/ferret/internal/tui/common"
+	"github.com/jxdones/ferret/internal/tui/components/auth"
 	"github.com/jxdones/ferret/internal/tui/components/bodyeditor"
 	"github.com/jxdones/ferret/internal/tui/components/headers"
 	"github.com/jxdones/ferret/internal/tui/components/tabs"
@@ -55,6 +57,7 @@ type Model struct {
 	tabs    tabs.Model
 	headers headers.Model
 	body    bodyeditor.Model
+	auth    auth.Model
 
 	url       string
 	width     int
@@ -75,10 +78,13 @@ func New() Model {
 	h.SetTheme(t)
 	b := bodyeditor.New()
 	b.SetTheme(t)
+	a := auth.New()
+	a.SetTheme(t)
 	return Model{
 		tabs:      tb,
 		headers:   h,
 		body:      b,
+		auth:      a,
 		bodyFocus: bodyFocusType,
 		theme:     t,
 	}
@@ -91,6 +97,7 @@ func (m *Model) SetTheme(t theme.Theme) {
 	m.tabs.SetActiveForeground(t.RequestPaneLabel)
 	m.headers.SetTheme(t)
 	m.body.SetTheme(t)
+	m.auth.SetTheme(t)
 }
 
 // SetSize sets the dimensions of the request pane model and its child components.
@@ -100,6 +107,7 @@ func (m *Model) SetSize(width int, height int) {
 	m.tabs.SetSize(width)
 	m.headers.SetSize(width)
 	m.body.SetSize(width, max(1, height-2))
+	m.auth.SetSize(width)
 }
 
 // SetFocused sets the focused state of the request pane model and its child
@@ -148,6 +156,11 @@ func (m Model) Body() string {
 	return m.body.Value()
 }
 
+// SetAuth sets the request and collection auth on the auth component.
+func (m *Model) SetAuth(reqAuth *collection.Auth, collectionAuth *collection.Auth) {
+	m.auth.SetAuth(reqAuth, collectionAuth)
+}
+
 // SetURL stores the current request URL used by the params tab.
 func (m *Model) SetURL(rawURL string) {
 	m.url = rawURL
@@ -178,6 +191,8 @@ func (m Model) View() tea.View {
 			return tea.NewView(typeLine)
 		}
 		return tea.NewView(strings.Join([]string{typeLine, "", m.body.View()}, "\n"))
+	case requestTabAuth:
+		return m.auth.View()
 	}
 	return tea.NewView("")
 }
@@ -253,6 +268,26 @@ func (m Model) updateKeyPress(msg tea.KeyPressMsg) (Model, tea.Cmd, bool) {
 		}
 		// Tab / shift+tab: same as params/auth — let the root move focus between URL bar and panes.
 		return m, nil, false
+	case requestTabAuth:
+		if m.auth.Inserting() {
+			var cmd tea.Cmd
+			m.auth, cmd, _ = m.auth.Update(msg)
+			return m, cmd, true
+		}
+		switch msg.String() {
+		case "]":
+			m.tabs.Next()
+			m.syncEditorFocus()
+			return m, nil, true
+		case "[":
+			m.tabs.Previous()
+			m.syncEditorFocus()
+			return m, nil, true
+		}
+		var cmd tea.Cmd
+		var handled bool
+		m.auth, cmd, handled = m.auth.Update(msg)
+		return m, cmd, handled
 	default:
 		switch msg.String() {
 		case "]":
@@ -334,6 +369,7 @@ func (m *Model) syncEditorFocus() {
 	m.headers.SetFocused(m.focused && m.activeTab() == requestTabHeaders)
 	bodyActive := m.focused && m.activeTab() == requestTabBody
 	m.body.SetFocused(bodyActive && m.bodyFocus == bodyFocusEditor)
+	m.auth.SetFocused(m.focused && m.activeTab() == requestTabAuth)
 }
 
 // syncBodySyntax updates the body syntax based on the headers.
@@ -455,7 +491,7 @@ type KeyMap struct{}
 func (k KeyMap) ShortHelp() []key.Binding {
 	return []key.Binding{
 		key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
-		key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "navigate")),
+		key.NewBinding(key.WithKeys("h", "j", "k", "l"), key.WithHelp("h/j/k/l", "navigate")),
 		key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "insert / edit")),
 	}
 }
@@ -467,7 +503,7 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 			key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
 		},
 		{
-			key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "navigate")),
+			key.NewBinding(key.WithKeys("h", "j", "k", "l"), key.WithHelp("h/j/k/l", "navigate")),
 			key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete row")),
 			key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "insert / edit")),
 		},

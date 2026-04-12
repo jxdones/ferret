@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Auth tab in the request pane.** The `auth` tab now renders a live editor for the active request's auth configuration. Supports `bearer`, `basic`, `api key` (header or query), and `none`. The auth type is selected with `h`/`l`, fields are navigated with `j`/`k`, and edited with `i` or `enter`. Loading a request from the collection picker populates the auth tab from the request's `auth` field, inheriting from `.ferret.yaml` when the request does not override it.
+
 ### Changed
 
 - **Sanitized filesystem paths in error messages.** Errors from `collection` and `env` no longer expose full absolute paths (which leak usernames and directory layout). File errors now show a short `collection/file.yaml` style identifier: direct children of `requests/` or `environments/` use the collection name as prefix (e.g. `pokeapi/list.yaml`), nested files use their immediate parent directory (e.g. `users/list.yaml`). Directory-level errors use generic messages.
