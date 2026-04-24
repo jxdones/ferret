@@ -215,11 +215,8 @@ func (m Model) View() tea.View {
 	lines = append(lines, nameHdr+valHdr)
 	lines = append(lines, divider)
 
-	hasBody := false
-
 	computed := m.missingComputedHeaders()
 	if len(computed) > 0 {
-		hasBody = true
 		lines = append(lines, muted.Render(common.TruncatePad("  computed at send time", m.width)))
 		lines = append(lines, divider)
 		for _, h := range computed {
@@ -231,7 +228,6 @@ func (m Model) View() tea.View {
 	}
 
 	for i, h := range m.items {
-		hasBody = true
 		nameStyle, valStyle := bodyNameOff, bodyValueOff
 		if i == m.cursor {
 			nameStyle, valStyle = bodyNameSel, bodyValueSel
@@ -250,14 +246,6 @@ func (m Model) View() tea.View {
 		nameView := m.nameInput.View()
 		valueView := m.valueInput.View()
 		lines = append(lines, " "+nameView+" "+valueView)
-	} else {
-		hint := lipgloss.NewStyle().
-			Foreground(m.theme.TextMuted).
-			Render("  i/I/A add · d delete row · tab/shift+tab fields")
-		if !hasBody {
-			lines = append(lines, divider)
-		}
-		lines = append(lines, common.TruncatePad(hint, m.width))
 	}
 
 	return tea.NewView(strings.Join(lines, "\n"))

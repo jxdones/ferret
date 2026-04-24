@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-04-23
+
 ### Added
 
 - **Harbor theme.** A new built-in theme with a dark-navy canvas, vivid teal accents, hot-pink POST highlights, and sharp green GET/success colors. Set `theme: harbor` in `~/.config/ferret/config.yaml` to enable it. Harbor is the first theme to use the new `Background` field, which sets the terminal's background color via `tea.View.BackgroundColor` so the canvas color is consistent regardless of the terminal's own default.
 
 - **Theme background color support.** The `Theme` struct now has an optional `Background` field. When set, ferret passes it to bubbletea's `View.BackgroundColor`, painting the terminal's actual background rather than relying on the terminal default. Existing themes leave `Background` nil and are unaffected.
+
+### Changed
+
+- **Context-sensitive shortcuts bar for the headers tab.** The inline hint (`i/I/A add · d delete row · tab/shift+tab fields`) has been removed from the headers content area. The bottom shortcuts bar now shows the relevant bindings dynamically: in normal mode it shows `]/[`, `j/k navigate`, `i/I/A add row`, and `d delete row`. In insert mode it switches to `tab next field`, `shift+tab prev field`, `enter commit`, and `esc cancel`.
 
 ## [0.2.7] - 2026-04-12
 

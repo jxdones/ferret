@@ -258,13 +258,15 @@ func TestModel_View(t *testing.T) {
 		wantNot  []string
 	}{
 		{
-			name: "shows_column_headers_and_hint_when_not_inserting",
+			name: "shows_column_headers_when_not_inserting",
 			setup: func(m *Model) {
 				m.SetSize(50)
 			},
 			wantSubs: []string{
 				"Name",
 				"Value",
+			},
+			wantNot: []string{
 				"add",
 				"d delete",
 			},

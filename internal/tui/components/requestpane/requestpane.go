@@ -484,6 +484,42 @@ func bodySyntaxFor(headers map[string]string, body string) bodyeditor.Syntax {
 	return bodyeditor.Syntax(common.DetectSyntax(ct, body))
 }
 
+// activeKeyMap holds bindings for the current request pane context.
+type activeKeyMap struct {
+	short []key.Binding
+	full  [][]key.Binding
+}
+
+func (k activeKeyMap) ShortHelp() []key.Binding  { return k.short }
+func (k activeKeyMap) FullHelp() [][]key.Binding { return k.full }
+
+// KeyMap returns context-sensitive key bindings based on the active tab and state.
+func (m Model) KeyMap() activeKeyMap {
+	if m.activeTab() == requestTabHeaders {
+		if m.headers.IsInserting() {
+			return activeKeyMap{
+				short: []key.Binding{
+					key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next field")),
+					key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev field")),
+					key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "commit")),
+					key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "cancel")),
+				},
+				full: Keys.FullHelp(),
+			}
+		}
+		return activeKeyMap{
+			short: []key.Binding{
+				key.NewBinding(key.WithKeys("]", "["), key.WithHelp("]/[", "next/prev tab")),
+				key.NewBinding(key.WithKeys("j", "k"), key.WithHelp("j/k", "navigate")),
+				key.NewBinding(key.WithKeys("i"), key.WithHelp("i/I/A", "add row")),
+				key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete row")),
+			},
+			full: Keys.FullHelp(),
+		}
+	}
+	return activeKeyMap{short: Keys.ShortHelp(), full: Keys.FullHelp()}
+}
+
 // KeyMap defines the key bindings for the request pane.
 type KeyMap struct{}
 

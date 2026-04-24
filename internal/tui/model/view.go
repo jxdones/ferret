@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jxdones/ferret/internal/tui/common"
-	"github.com/jxdones/ferret/internal/tui/components/requestpane"
 	"github.com/jxdones/ferret/internal/tui/components/responsepane"
 	"github.com/jxdones/ferret/internal/tui/components/shortcuts"
 	"github.com/jxdones/ferret/internal/tui/components/urlbar"
@@ -144,7 +143,7 @@ func (m Model) paneKeyMap() help.KeyMap {
 	case focusURLBar:
 		return urlbar.Keys
 	case focusRequestPane:
-		return requestpane.Keys
+		return m.tab().requestPane.KeyMap()
 	case focusResponsePane:
 		return responsepane.Keys
 	default:

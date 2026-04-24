@@ -1,5 +1,5 @@
 TARGET := ferret
-VERSION := 0.2.7
+VERSION := 0.2.8
 GO := go
 GOFMT := gofmt
 LINTER := golangci-lint
